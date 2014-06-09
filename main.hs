@@ -28,19 +28,23 @@ getInput = do
     'l' -> return Right
     otherwise -> getInput
 
-addInput :: Input -> World -> Coord
-addInput input world =
+newPos :: Input -> Coord -> Coord
+newPos input coord =
   case input of
-      Up	-> addCoords (0,  1) (hero world)
-      Down 	-> addCoords (0, -1) (hero world)
-      Left 	-> addCoords (1,  0) (hero world)
-      Right 	-> addCoords (-1, 0) (hero world)
+      Up	-> addCoords (0,  1) coord
+      Down 	-> addCoords (0, -1) coord
+      Left 	-> addCoords (1,  0) coord
+      Right 	-> addCoords (-1, 0) coord
+
+modifyWorld :: Input -> World -> World
+modifyWorld input world = world{hero = newPos(input heroPos)}
+  where heroPos = (hero world)
 
 gameLoop :: World -> IO ()
 gameLoop world = do
+  print world
   input <- getInput
-  print $ addInput input world
-  let world' = world
+  let world' = modifyWorld(input world)
     in gameLoop world'
 
 main :: IO ()

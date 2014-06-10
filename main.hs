@@ -37,14 +37,14 @@ newPos input coord =
       Right 	-> addCoords (-1, 0) coord
 
 modifyWorld :: Input -> World -> World
-modifyWorld input world = world{hero = newPos(input heroPos)}
+modifyWorld input world = world{hero = (newPos input heroPos)}
   where heroPos = (hero world)
 
 gameLoop :: World -> IO ()
 gameLoop world = do
   print world
   input <- getInput
-  let world' = modifyWorld(input world)
+  let world' = (modifyWorld input world)
     in gameLoop world'
 
 main :: IO ()

@@ -7,7 +7,7 @@ import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 
 
-level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#.........................#\n#.........................#\n#.........................#\n###########################"
+level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
 
 type Coord = (Int, Int)
 
@@ -16,6 +16,7 @@ addCoords (a, b) (x, y) = (a + x, b + y)
 
 data World = World {
   hero  :: Coord,
+  monster :: Coord,
   wall  :: [Coord],
   ground :: [Coord],
   steps :: Int,
@@ -29,7 +30,8 @@ emptyWorld = World {
   ground = [],
   steps = 0,
   wMax = (0,0),
-  hero = (0,0)
+  hero = (0,0),
+  monster = (0,0)
 }
 
 fstsnd :: (a,b,c) -> (a,b)
@@ -46,6 +48,7 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
         consume wld (c, elt) =
           case elt of
             '@' -> wld{hero = c, ground = c:ground wld}
+            'x' -> wld{monster = c, ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
@@ -97,6 +100,7 @@ drawWorld world = do
   sequence (map (\ (x,y) -> mvAddCh y x (castEnum '#')) (wall world))
   sequence (map (\ (x,y) -> mvAddCh y x (castEnum '.')) (ground world))
   mvAddCh (snd (hero world)) (fst (hero world)) (castEnum '@')
+  mvAddCh (snd (monster world)) (fst (monster world)) (castEnum 'x')
   refresh
 
 main :: IO ()

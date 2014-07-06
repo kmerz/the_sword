@@ -5,7 +5,7 @@ import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 
 
-level = "###########\n#.........#\n#....@.....#\n#.........#\n###########"
+level = "###########\n#.........#\n#...@.....#\n#.........#\n###########"
 
 type Coord = (Int, Int)
 
@@ -41,9 +41,9 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
         maxi    = (maxX, maxY)
         consume wld (c, elt) =
           case elt of
-            '@' -> wld{hero    = c}
-            '#' -> wld{wall    = c:wall wld}
-            '.' -> wld{ground   = c:ground wld}
+            '@' -> wld{hero = c, ground = c:ground wld}
+            '#' -> wld{wall = c:wall wld}
+            '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
 
 getInput = do

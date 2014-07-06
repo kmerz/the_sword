@@ -1,3 +1,5 @@
+module Main where
+
 import System.IO (stdin, stdout, BufferMode( NoBuffering),
   hSetEcho, hSetBuffering)
 import Prelude hiding (Either(..))
@@ -6,24 +8,10 @@ import Control.Concurrent (threadDelay)
 import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 
+import SUtils
+import SWorld
 
 level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
-
-type Coord = (Int, Int)
-
-addCoords :: Coord -> Coord -> Coord
-addCoords (a, b) (x, y) = (a + x, b + y)
-
-data World = World {
-  hero  :: Coord,
-  monster :: Coord,
-  wall  :: [Coord],
-  ground :: [Coord],
-  steps :: Int,
-  wMax  :: Coord
-} deriving (Show)
-
-data Input = Quit | Up | Down | Left | Right | None deriving (Show, Eq, Ord)
 
 emptyWorld = World {
   wall = [],
@@ -33,9 +21,6 @@ emptyWorld = World {
   hero = (0,0),
   monster = (0,0)
 }
-
-fstsnd :: (a,b,c) -> (a,b)
-fstsnd (a,b,_) = (a,b)
 
 loadLevel :: String -> World
 loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
@@ -55,7 +40,7 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
 
 getInput = do
   -- a poor mans timeout :(
-  threadDelay 100000
+  threadDelay 200000
   char <- getch
   case decodeKey char of
     KeyChar 'k' -> return Up
@@ -65,30 +50,12 @@ getInput = do
     KeyChar 'q' -> return Quit
     otherwise -> return None
 
-newPos :: Input -> Coord -> Coord
-newPos input coord =
-  case input of
-      Up	-> addCoords (0, -1) coord
-      Down 	-> addCoords (0,  1) coord
-      Left 	-> addCoords (-1, 0) coord
-      Right 	-> addCoords (1,  0) coord
-
-modifyWorld :: Input -> World -> World
-modifyWorld input world = if legalMove
-			    then world{hero = newHeroPos}
-			    else world
-  where heroPos = (hero world)
-	newHeroPos = (newPos input heroPos)
-	legalMove = not $ newHeroPos `elem` (wall world)
-
 gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
   input <- getInput
   case input of
     Quit -> return ()
-    None -> let world' = world{steps = ((steps world) +1)}
-              in gameLoop world'
     otherwise -> let world' = (modifyWorld input world)
                    in gameLoop world'
 

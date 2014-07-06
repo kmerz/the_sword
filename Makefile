@@ -1,5 +1,5 @@
 all:
-	ghc --make main.hs -o the_sword
+	ghc --make main.hs s_world.hs s_utils.hs -o the_sword
 
 clean:
-	rm -rf main.hi the_sword main.o
+	rm -rf *.hi the_sword *.o

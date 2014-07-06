@@ -11,12 +11,35 @@ addCoords (a, b) (x, y) = (a + x, b + y)
 
 data World = World {
   hero :: Coord,
-  wall :: [Coord]
+  wall :: [Coord],
+  wMax :: Coord
 } deriving (Show)
 
 data Input = Up | Down | Left | Right deriving (Show, Eq, Ord)
 
-emptyWorld = World (0,0) []
+emptyWorld = World {
+  wall = [],
+  wMax = (0,0),
+  hero = (0,0)
+}
+
+fstsnd :: (a,b,c) -> (a,b)
+fstsnd (a,b,_) = (a,b)
+
+loadLevel :: String -> World
+loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
+  where lns     = lines str
+        coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
+        elems   = concat $ zipWith zip coords lns
+        maxX    = maximum . map (fst . fst) $ elems
+        maxY    = maximum . map (snd . fst) $ elems
+        maxi    = (maxX, maxY)
+        consume wld (c, elt) = 
+          case elt of
+            '@' -> wld{hero    = c}
+            '#' -> wld{wall    = c:wall wld}
+            '.' -> wld
+            otherwise -> error (show elt ++ " not recognized")
 
 getInput :: IO Input
 getInput = do
@@ -54,5 +77,6 @@ main = do
   hSetBuffering stdin NoBuffering
   hSetBuffering stdout NoBuffering
   
-  world <- return emptyWorld
+  world <- return $ (loadLevel level)
+  -- world <- return emptyWorld
   gameLoop world

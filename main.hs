@@ -1,6 +1,8 @@
 import System.IO (stdin, stdout, BufferMode( NoBuffering),
   hSetEcho, hSetBuffering)
 import Prelude hiding (Either(..))
+import Data.Char
+import Control.Concurrent (threadDelay)
 import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 
@@ -16,14 +18,16 @@ data World = World {
   hero  :: Coord,
   wall  :: [Coord],
   ground :: [Coord],
+  steps :: Int,
   wMax  :: Coord
 } deriving (Show)
 
-data Input = Quit | Up | Down | Left | Right deriving (Show, Eq, Ord)
+data Input = Quit | Up | Down | Left | Right | None deriving (Show, Eq, Ord)
 
 emptyWorld = World {
   wall = [],
   ground = [],
+  steps = 0,
   wMax = (0,0),
   hero = (0,0)
 }
@@ -47,6 +51,8 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
             otherwise -> error (show elt ++ " not recognized")
 
 getInput = do
+  -- a poor mans timeout :(
+  threadDelay 100000
   char <- getch
   case decodeKey char of
     KeyChar 'k' -> return Up
@@ -54,7 +60,7 @@ getInput = do
     KeyChar 'h' -> return Left
     KeyChar 'l' -> return Right
     KeyChar 'q' -> return Quit
-    otherwise -> getInput
+    otherwise -> return None
 
 newPos :: Input -> Coord -> Coord
 newPos input coord =
@@ -76,11 +82,12 @@ gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
   input <- getInput
-  if input == Quit then
-    return ()
-  else
-    let world' = (modifyWorld input world)
-      in gameLoop world'
+  case input of
+    Quit -> return ()
+    None -> let world' = world{steps = ((steps world) +1)}
+              in gameLoop world'
+    otherwise -> let world' = (modifyWorld input world)
+                   in gameLoop world'
 
 castEnum = toEnum . fromEnum
 
@@ -96,6 +103,8 @@ main :: IO ()
 main = do
   initCurses
   echo False
+  noDelay stdScr True
+  timeout 1000
   cursSet CursorInvisible
   (sizeY, sizeX) <- scrSize
 

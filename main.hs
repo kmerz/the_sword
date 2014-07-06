@@ -65,8 +65,12 @@ newPos input coord =
       Right 	-> addCoords (1,  0) coord
 
 modifyWorld :: Input -> World -> World
-modifyWorld input world = world{hero = (newPos input heroPos)}
+modifyWorld input world = if legalMove
+			    then world{hero = newHeroPos}
+			    else world
   where heroPos = (hero world)
+	newHeroPos = (newPos input heroPos)
+	legalMove = not $ newHeroPos `elem` (wall world)
 
 gameLoop :: World -> IO ()
 gameLoop world = do

@@ -1,6 +1,9 @@
 import System.IO (stdin, stdout, BufferMode( NoBuffering),
   hSetEcho, hSetBuffering)
 import Prelude hiding (Either(..))
+import UI.HSCurses.Curses
+import UI.HSCurses.CursesHelper
+
 
 level = "###########\n#.........#\n#....@.....#\n#.........#\n###########"
 
@@ -10,15 +13,17 @@ addCoords :: Coord -> Coord -> Coord
 addCoords (a, b) (x, y) = (a + x, b + y)
 
 data World = World {
-  hero :: Coord,
-  wall :: [Coord],
-  wMax :: Coord
+  hero  :: Coord,
+  wall  :: [Coord],
+  ground :: [Coord],
+  wMax  :: Coord
 } deriving (Show)
 
-data Input = Up | Down | Left | Right deriving (Show, Eq, Ord)
+data Input = Quit | Up | Down | Left | Right deriving (Show, Eq, Ord)
 
 emptyWorld = World {
   wall = [],
+  ground = [],
   wMax = (0,0),
   hero = (0,0)
 }
@@ -34,30 +39,30 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
         maxX    = maximum . map (fst . fst) $ elems
         maxY    = maximum . map (snd . fst) $ elems
         maxi    = (maxX, maxY)
-        consume wld (c, elt) = 
+        consume wld (c, elt) =
           case elt of
             '@' -> wld{hero    = c}
             '#' -> wld{wall    = c:wall wld}
-            '.' -> wld
+            '.' -> wld{ground   = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
 
-getInput :: IO Input
 getInput = do
-  char <- getChar
-  case char of
-    'k' -> return Up
-    'j' -> return Down
-    'h' -> return Left
-    'l' -> return Right
+  char <- getch
+  case decodeKey char of
+    KeyChar 'k' -> return Up
+    KeyChar 'j' -> return Down
+    KeyChar 'h' -> return Left
+    KeyChar 'l' -> return Right
+    KeyChar 'q' -> return Quit
     otherwise -> getInput
 
 newPos :: Input -> Coord -> Coord
 newPos input coord =
   case input of
-      Up	-> addCoords (0,  1) coord
-      Down 	-> addCoords (0, -1) coord
-      Left 	-> addCoords (1,  0) coord
-      Right 	-> addCoords (-1, 0) coord
+      Up	-> addCoords (0, -1) coord
+      Down 	-> addCoords (0,  1) coord
+      Left 	-> addCoords (-1, 0) coord
+      Right 	-> addCoords (1,  0) coord
 
 modifyWorld :: Input -> World -> World
 modifyWorld input world = world{hero = (newPos input heroPos)}
@@ -65,18 +70,31 @@ modifyWorld input world = world{hero = (newPos input heroPos)}
 
 gameLoop :: World -> IO ()
 gameLoop world = do
-  print world
+  drawWorld world
   input <- getInput
-  let world' = (modifyWorld input world)
-    in gameLoop world'
+  if input == Quit then
+    return ()
+  else
+    let world' = (modifyWorld input world)
+      in gameLoop world'
+
+castEnum = toEnum . fromEnum
+
+drawWorld :: World -> IO ()
+drawWorld world = do
+  erase
+  sequence (map (\ (x,y) -> mvAddCh y x (castEnum '#')) (wall world))
+  sequence (map (\ (x,y) -> mvAddCh y x (castEnum '.')) (ground world))
+  mvAddCh (snd (hero world)) (fst (hero world)) (castEnum '@')
+  refresh
 
 main :: IO ()
 main = do
-  -- Don't show input echo
-  hSetEcho stdin False
-  hSetBuffering stdin NoBuffering
-  hSetBuffering stdout NoBuffering
-  
+  initCurses
+  echo False
+  cursSet CursorInvisible
+  (sizeY, sizeX) <- scrSize
+
   world <- return $ (loadLevel level)
-  -- world <- return emptyWorld
   gameLoop world
+  endWin

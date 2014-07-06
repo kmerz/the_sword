@@ -1,3 +1,8 @@
 main.hi
 main.o
 main
+s_utils.hi
+s_utils.o
+s_world.hi
+s_world.o
+the_sword

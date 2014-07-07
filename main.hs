@@ -7,6 +7,7 @@ import Data.Char
 import Control.Concurrent (threadDelay)
 import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
+import System.Time
 
 import SUtils
 import SWorld
@@ -18,12 +19,12 @@ emptyWorld = World {
   ground = [],
   steps = 0,
   wMax = (0,0),
-  hero = (0,0),
-  monster = (0,0)
+  hero = Hero { position = (0,0), life = 0 },
+  monster = Monster { mposition = (0,0), mlife = 0, lastMove = 0}
 }
 
-loadLevel :: String -> World
-loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
+loadLevel :: String -> Int -> World
+loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
   where lns     = lines str
         coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
         elems   = concat $ zipWith zip coords lns
@@ -32,15 +33,14 @@ loadLevel str = foldl consume (emptyWorld{wMax = maxi}) elems
         maxi    = (maxX, maxY)
         consume wld (c, elt) =
           case elt of
-            '@' -> wld{hero = c, ground = c:ground wld}
-            'x' -> wld{monster = c, ground = c:ground wld}
+            '@' -> wld{hero = (hero wld){ position = c }, ground = c:ground wld}
+            'x' -> wld{monster = (monster wld) {mposition = c, lastMove = tnow},
+	      ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
 
 getInput = do
-  -- a poor mans timeout :(
-  threadDelay 200000
   char <- getch
   case decodeKey char of
     KeyChar 'k' -> return Up
@@ -54,9 +54,10 @@ gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
   input <- getInput
+  timeNow <- getClockTime >>= (\(TOD sec _) -> return sec)
   case input of
     Quit -> return ()
-    otherwise -> let world' = (modifyWorld input world)
+    otherwise -> let world' = (modifyWorld input world (fromIntegral timeNow))
                    in gameLoop world'
 
 castEnum = toEnum . fromEnum
@@ -66,8 +67,8 @@ drawWorld world = do
   erase
   sequence (map (\ (x,y) -> mvAddCh y x (castEnum '#')) (wall world))
   sequence (map (\ (x,y) -> mvAddCh y x (castEnum '.')) (ground world))
-  mvAddCh (snd (hero world)) (fst (hero world)) (castEnum '@')
-  mvAddCh (snd (monster world)) (fst (monster world)) (castEnum 'x')
+  mvAddCh (snd (position (hero world))) (fst (position (hero world))) (castEnum '@')
+  mvAddCh (snd (mposition (monster world))) (fst (mposition (monster world))) (castEnum 'x')
   refresh
 
 main :: IO ()
@@ -75,10 +76,10 @@ main = do
   initCurses
   echo False
   noDelay stdScr True
-  timeout 1000
   cursSet CursorInvisible
   (sizeY, sizeX) <- scrSize
 
-  world <- return $ (loadLevel level)
+  timeNow <- getClockTime >>= (\(TOD sec _) -> return sec)
+  world <- return $ (loadLevel level (fromIntegral timeNow))
   gameLoop world
   endWin

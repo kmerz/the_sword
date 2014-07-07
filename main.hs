@@ -54,10 +54,10 @@ gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
   input <- getInput
-  timeNow <- getClockTime >>= (\(TOD sec _) -> return sec)
+  tnow <- getClockTime >>= (\(TOD sec _) -> return sec)
   case input of
     Quit -> return ()
-    otherwise -> let world' = (modifyWorld input world (fromIntegral timeNow))
+    otherwise -> let world' = moveMonster (moveHero world input) (fromIntegral tnow)
                    in gameLoop world'
 
 castEnum = toEnum . fromEnum

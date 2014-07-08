@@ -9,8 +9,8 @@ import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 import System.Time
 
-import SUtils
-import SWorld
+import Sword.Utils
+import Sword.World
 
 level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
 

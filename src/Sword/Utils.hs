@@ -1,4 +1,4 @@
-module SUtils where
+module Sword.Utils where
 
 import Prelude hiding (Either(..))
 

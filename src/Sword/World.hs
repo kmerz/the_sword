@@ -1,7 +1,7 @@
-module SWorld where
+module Sword.World where
 
 import System.Time
-import SUtils
+import Sword.Utils
 
 data Hero = Hero {
   position :: Coord,

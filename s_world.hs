@@ -1,5 +1,6 @@
 module SWorld where
 
+import System.Time
 import SUtils
 
 data Hero = Hero {
@@ -10,7 +11,7 @@ data Hero = Hero {
 data Monster = Monster {
   mposition :: Coord,
   mlife :: Int,
-  lastMove :: Int
+  lastMove :: ClockTime
 } deriving (Show)
 
 data World = World {
@@ -31,7 +32,7 @@ moveHero world input = if legalMove
 	newHeroPos = newPos input heroPos
 	legalMove = not $ newHeroPos `elem` (wall world)
 
-moveMonster :: World -> Int -> World
+moveMonster :: World -> ClockTime -> World
 moveMonster w tnow = let nextMove = calcMoveMonster w
 			 legalMove = legalMonsterMove nextMove tnow w
 	             in if legalMove
@@ -40,11 +41,11 @@ moveMonster w tnow = let nextMove = calcMoveMonster w
 			  else w
 
 
-legalMonsterMove :: Coord -> Int -> World -> Bool
-legalMonsterMove pos now w = let timediff = now - (lastMove (monster w))
-				 legalpos = (not $ pos `elem` (wall w)) &&
-					 (not $ pos == (position (hero w)))
-			     in legalpos && timediff > 1
+legalMonsterMove :: Coord -> ClockTime -> World -> Bool
+legalMonsterMove pos tnow w = let timediff = diffClockTimes tnow (lastMove (monster w))
+				  legalpos = (not $ pos `elem` (wall w)) &&
+					     (not $ pos == (position (hero w)))
+			     in legalpos && timediff > (TimeDiff 0 0 0 0 0 0 500000000000)
 
 calcMoveMonster :: World -> Coord
 calcMoveMonster w = let heroPos = (position (hero w))

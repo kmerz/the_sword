@@ -20,10 +20,10 @@ emptyWorld = World {
   steps = 0,
   wMax = (0,0),
   hero = Hero { position = (0,0), life = 0 },
-  monster = Monster { mposition = (0,0), mlife = 0, lastMove = 0}
+  monster = Monster { mposition = (0,0), mlife = 0, lastMove = TOD 0 0}
 }
 
-loadLevel :: String -> Int -> World
+loadLevel :: String -> ClockTime -> World
 loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
   where lns     = lines str
         coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
@@ -54,10 +54,10 @@ gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
   input <- getInput
-  tnow <- getClockTime >>= (\(TOD sec _) -> return sec)
+  tnow <- getClockTime
   case input of
     Quit -> return ()
-    otherwise -> let world' = moveMonster (moveHero world input) (fromIntegral tnow)
+    otherwise -> let world' = moveMonster (moveHero world input) tnow
                    in gameLoop world'
 
 castEnum = toEnum . fromEnum
@@ -79,7 +79,7 @@ main = do
   cursSet CursorInvisible
   (sizeY, sizeX) <- scrSize
 
-  timeNow <- getClockTime >>= (\(TOD sec _) -> return sec)
-  world <- return $ (loadLevel level (fromIntegral timeNow))
+  timeNow <- getClockTime
+  world <- return $ (loadLevel level timeNow)
   gameLoop world
   endWin

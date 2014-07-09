@@ -14,13 +14,20 @@ import Sword.World
 
 level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
 
+emptyHero = Hero {
+  position = (0,0),
+  life = 0,
+  maxLife = 100,
+  hit = (None, (0,0))
+}
+
 emptyWorld = World {
-  gamelog = ["Start the game"],
+  gamelog = ["You should move", "Welcome to The Sword"],
   wall = [],
   ground = [],
   steps = 0,
   wMax = (0,0),
-  hero = Hero { position = (0,0), life = 0, hit = (None, (0,0)) },
+  hero = emptyHero,
   monster = Monster { mposition = (0,0), mlife = 0, lastMove = TOD 0 0}
 }
 
@@ -75,7 +82,8 @@ drawWorld world = do
   drawChar '@' (position (hero world))
   drawChar 'x' (mposition (monster world))
   drawHit (hero world)
-  drawLog (gamelog world)
+  drawStats (hero world)
+  drawLog (gamelog world) (0, 25)
   refresh
   where drawWall = drawChar '#'
 	drawGround = drawChar '.'
@@ -90,15 +98,21 @@ drawString (x:xs) (a, b) = do
   drawChar x (a, b)
   drawString xs (a + 1, b)
 
-drawLog :: [String] -> IO ()
-drawLog [] = return ()
-drawLog (x:xs) = drawString x (0, 0)
+drawLog :: [String] -> Coord -> IO ()
+drawLog [] _ = return ()
+drawLog (x:xs) (a ,b) = do
+  drawString x (a, b)
+  drawLog xs (0, b + 1)
 
 drawHit :: Hero -> IO ()
-drawHit (Hero _ _ (input, a)) 
+drawHit (Hero _ _ _ (input, a))
   | input `elem` [FightLeft, FightRight] = drawChar '-' a
   | input `elem` [FightUp, FightDown] = drawChar '|' a
   | otherwise = return ()
+
+drawStats :: Hero -> IO ()
+drawStats (Hero (x,y) life maxLife _) = do
+  (drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "%") (0, 24))
 
 main :: IO ()
 main = do

@@ -6,6 +6,7 @@ import Sword.Utils
 data Hero = Hero {
   position :: Coord,
   life :: Int,
+  maxLife :: Int,
   hit :: (Input, Coord)
 } deriving (Show)
 

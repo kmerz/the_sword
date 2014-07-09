@@ -5,7 +5,8 @@ import Sword.Utils
 
 data Hero = Hero {
   position :: Coord,
-  life :: Int
+  life :: Int,
+  hit :: (Input, Coord)
 } deriving (Show)
 
 data Monster = Monster {
@@ -29,11 +30,16 @@ modifyWorld input tnow world = mMove $ hMove $ world
         hMove = moveHero input
 
 moveHero :: Input -> World -> World
-moveHero input world = if legalMove
-  then world{hero = (hero world) { position = newHeroPos }}
-  else world
+moveHero input world
+  | needMove && legalMove = world{ hero = (hero world) {
+       position = newHeroPos }}
+  | strikeHit = world { hero = (hero world) { hit = (input, newHeroHit) }}
+  | otherwise = world { hero = (hero world) { hit = (None, (0,0)) }}  
   where heroPos = position (hero world)
         newHeroPos = newPos input heroPos
+        newHeroHit = newHit input heroPos
+	needMove = not (newHeroPos == heroPos)
+	strikeHit = input `elem` fightMoves
         legalMove = not $ newHeroPos `elem` (wall world)
 
 moveMonster :: ClockTime -> World -> World

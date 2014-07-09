@@ -7,9 +7,15 @@ data Input = Quit
        	| Down
 	| Left
 	| Right
+	| FightUp
+	| FightDown
+	| FightLeft
+	| FightRight
 	| None deriving (Show, Eq, Ord)
 
 type Coord = (Int, Int)
+
+fightMoves = [FightUp, FightDown, FightLeft, FightRight]
 
 subtractCoords :: Coord -> Coord -> Coord
 subtractCoords (x,y) (a,b) = (x-a,y-b)
@@ -27,4 +33,13 @@ newPos input coord =
       Down 	-> addCoords (0,  1) coord
       Left 	-> addCoords (-1, 0) coord
       Right 	-> addCoords (1,  0) coord
-      None	-> coord
+      otherwise	-> coord
+
+newHit :: Input -> Coord -> Coord
+newHit input coord =
+  case input of
+      FightUp		-> addCoords (0, -1) coord
+      FightDown 	-> addCoords (0,  1) coord
+      FightLeft 	-> addCoords (-1, 0) coord
+      FightRight 	-> addCoords (1,  0) coord
+      otherwise		-> coord

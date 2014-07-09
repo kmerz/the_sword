@@ -15,6 +15,7 @@ import Sword.World
 level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
 
 emptyWorld = World {
+  gamelog = ["Start the game"],
   wall = [],
   ground = [],
   steps = 0,
@@ -74,6 +75,7 @@ drawWorld world = do
   drawChar '@' (position (hero world))
   drawChar 'x' (mposition (monster world))
   drawHit (hero world)
+  drawLog (gamelog world)
   refresh
   where drawWall = drawChar '#'
 	drawGround = drawChar '.'
@@ -81,6 +83,16 @@ drawWorld world = do
 drawChar :: Char -> Coord -> IO ()
 drawChar ' ' _ = return ()
 drawChar char (x,y) = mvAddCh y x (castEnum char)
+
+drawString :: [Char] -> Coord -> IO ()
+drawString [] _ = return ()
+drawString (x:xs) (a, b) = do
+  drawChar x (a, b)
+  drawString xs (a + 1, b)
+
+drawLog :: [String] -> IO ()
+drawLog [] = return ()
+drawLog (x:xs) = drawString x (0, 0)
 
 drawHit :: Hero -> IO ()
 drawHit (Hero _ _ (input, a)) 

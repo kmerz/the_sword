@@ -21,7 +21,8 @@ data World = World {
   wall  :: [Coord],
   ground :: [Coord],
   steps :: Int,
-  wMax  :: Coord
+  wMax  :: Coord,
+  gamelog :: [[Char]]
 } deriving (Show)
 
 modifyWorld :: Input -> ClockTime -> World -> World

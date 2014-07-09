@@ -21,6 +21,12 @@ emptyHero = Hero {
   hit = (None, (0,0))
 }
 
+emptyMonster = Monster {
+  mposition = (0,0),
+  mlife = 5,
+  lastMove = TOD 0 0
+}
+
 emptyWorld = World {
   gamelog = ["You should move", "Welcome to The Sword"],
   wall = [],
@@ -28,7 +34,7 @@ emptyWorld = World {
   steps = 0,
   wMax = (0,0),
   hero = emptyHero,
-  monster = Monster { mposition = (0,0), mlife = 0, lastMove = TOD 0 0}
+  monster = []
 }
 
 loadLevel :: String -> ClockTime -> World
@@ -43,8 +49,8 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
           case elt of
             '@' -> wld{hero = (hero wld){ position = c },
 	      ground = c:ground wld}
-            'x' -> wld{monster = (monster wld) {mposition = c,
-	      lastMove = tnow}, ground = c:ground wld}
+            'x' -> wld{monster = emptyMonster{mposition = c, lastMove = tnow}:(monster wld),
+	      ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
@@ -80,13 +86,14 @@ drawWorld world = do
   sequence (map drawWall (wall world))
   sequence (map drawGround (ground world))
   drawChar '@' (position (hero world))
-  drawChar 'x' (mposition (monster world))
+  sequence (map drawMonster (monster world))
   drawHit (hero world)
   drawStats (hero world)
   drawLog (gamelog world) (0, 25)
   refresh
   where drawWall = drawChar '#'
 	drawGround = drawChar '.'
+        drawMonster (Monster x _ _) = drawChar 'x' x
 
 drawChar :: Char -> Coord -> IO ()
 drawChar ' ' _ = return ()

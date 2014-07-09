@@ -57,19 +57,21 @@ gameLoop world = do
   tnow <- getClockTime
   case input of
     Quit -> return ()
-    otherwise -> let world' = moveMonster (moveHero world input) tnow
-                   in gameLoop world'
+    otherwise -> gameLoop $ modifyWorld input tnow world
 
 castEnum = toEnum . fromEnum
 
 drawWorld :: World -> IO ()
 drawWorld world = do
   erase
-  sequence (map (\ (x,y) -> mvAddCh y x (castEnum '#')) (wall world))
-  sequence (map (\ (x,y) -> mvAddCh y x (castEnum '.')) (ground world))
-  mvAddCh (snd (position (hero world))) (fst (position (hero world))) (castEnum '@')
-  mvAddCh (snd (mposition (monster world))) (fst (mposition (monster world))) (castEnum 'x')
+  sequence (map drawWall (wall world))
+  sequence (map drawGround (ground world))
+  drawChar '@' (position (hero world))
+  drawChar 'x' (mposition (monster world))
   refresh
+  where drawChar char (x,y) = mvAddCh y x (castEnum char)
+	drawWall = drawChar '#'
+	drawGround = drawChar '.'
 
 main :: IO ()
 main = do

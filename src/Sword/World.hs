@@ -23,16 +23,21 @@ data World = World {
   wMax  :: Coord
 } deriving (Show)
 
-moveHero :: World -> Input -> World
-moveHero world input = if legalMove
+modifyWorld :: Input -> ClockTime -> World -> World
+modifyWorld input tnow world = mMove $ hMove $ world
+  where mMove = moveMonster tnow
+        hMove = moveHero input
+
+moveHero :: Input -> World -> World
+moveHero input world = if legalMove
   then world{hero = (hero world) { position = newHeroPos }}
   else world
   where heroPos = position (hero world)
         newHeroPos = newPos input heroPos
         legalMove = not $ newHeroPos `elem` (wall world)
 
-moveMonster :: World -> ClockTime -> World
-moveMonster w tnow = if legalMove
+moveMonster :: ClockTime -> World -> World
+moveMonster tnow w = if legalMove
   then w{monster = (monster w){ mposition = nextMove, lastMove = tnow }}
   else w
   where nextMove = calcMoveMonster w

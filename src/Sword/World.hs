@@ -64,23 +64,34 @@ moveMonsters :: ClockTime -> World -> World
 moveMonsters tnow w = Map.foldrWithKey (moveMonster tnow) w (monster w)
 
 moveMonster :: ClockTime -> Coord -> Monster -> World -> World
-moveMonster tnow c m w = if legalMove
-  then w{monster = newMonsterMap}
-  else w
+moveMonster tnow c m w
+  | timeToMove && needMove && legalMove = w{monster = newMonsterMap}
+  | timeToMove && (not needMove) = makeMonsterHit w c m tnow
+  | otherwise = w
   where nextMove = calcMoveMonster w c
-        legalMove = legalMonsterMove nextMove tnow m w
+	needMove = not $ nextMove == (position (hero w))
+        legalMove = legalMonsterMove nextMove m w
 	monsterMap = Map.delete c (monster w)
-	newMonsterMap = Map.union newMonster monsterMap 
+	newMonsterMap = Map.union newMonster monsterMap
 	newMonster = Map.fromList [(nextMove, m{lastMove = tnow})]
+	timeSinceLastMove = diffClockTimes tnow (lastMove m)
+	timeToNextMove = (TimeDiff 0 0 0 0 0 0 500000000000)
+        timeToMove = timeSinceLastMove >= timeToNextMove
 
-legalMonsterMove :: Coord -> ClockTime -> Monster -> World -> Bool
-legalMonsterMove pos tnow m w = legalpos && timeSinceLastMove >= timeToNextMove
-  where timeSinceLastMove = diffClockTimes tnow (lastMove m)
-        legalpos = notOnWall && notOnHero && notOnMonster
+makeMonsterHit :: World -> Coord -> Monster -> ClockTime -> World
+makeMonsterHit w c m tnow = w'
+  where w' = w { gamelog = newgamelog, hero = newHero, monster = newMonsterMap}
+        newgamelog = "Monster hits you with 1":(gamelog w)
+        newHero = (hero w){ life = newLife }
+        newLife = if ((life (hero w)) - 1 <= 0) then 0 else (life (hero w)) - 1
+	newMonsterMap = Map.insert c m{lastMove = tnow} (monster w)
+
+legalMonsterMove :: Coord -> Monster -> World -> Bool
+legalMonsterMove pos m w = legalpos
+  where legalpos = notOnWall && notOnHero && notOnMonster
 	notOnWall = (not $ pos `elem` (wall w))
 	notOnHero = (not $ pos == (position (hero w)))
 	notOnMonster = Map.notMember pos (monster w)
-	timeToNextMove = (TimeDiff 0 0 0 0 0 0 500000000000)
 
 calcMoveMonster :: World -> Coord -> Coord
 calcMoveMonster w monsterPos

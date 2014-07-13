@@ -17,7 +17,7 @@ level = "###########################\n#............x............#\n#............
 
 emptyHero = Hero {
   position = (0,0),
-  life = 0,
+  life = 10,
   maxLife = 100,
   hit = (None, (0,0))
 }
@@ -74,9 +74,9 @@ gameLoop world = do
   drawWorld world
   input <- getInput
   tnow <- getClockTime
-  case input of
-    Quit -> return ()
-    otherwise -> gameLoop $ modifyWorld input tnow world
+  if input == Quit  || (life (hero (world))) <= 0
+    then return ()
+    else gameLoop $ modifyWorld input tnow world
 
 castEnum = toEnum . fromEnum
 

@@ -49,8 +49,8 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
           case elt of
             '@' -> wld{hero = (hero wld){ position = c },
 	      ground = c:ground wld}
-            'x' -> wld{monster = emptyMonster{mposition = c, lastMove = tnow}:(monster wld),
-	      ground = c:ground wld}
+            'x' -> wld{monster = emptyMonster{mposition = c, lastMove = tnow}:
+	      (monster wld), ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
@@ -89,7 +89,7 @@ drawWorld world = do
   sequence (map drawMonster (monster world))
   drawHit (hero world)
   drawStats (hero world)
-  drawLog (gamelog world) (0, 25)
+  drawLog (gamelog world) (0, 23)
   refresh
   where drawWall = drawChar '#'
 	drawGround = drawChar '.'
@@ -119,7 +119,7 @@ drawHit (Hero _ _ _ (input, a))
 
 drawStats :: Hero -> IO ()
 drawStats (Hero (x,y) life maxLife _) = do
-  (drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "%") (0, 24))
+  (drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "%") (0, 22))
 
 main :: IO ()
 main = do

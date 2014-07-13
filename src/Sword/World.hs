@@ -76,9 +76,10 @@ moveMonster tnow c m w = if legalMove
 legalMonsterMove :: Coord -> ClockTime -> Monster -> World -> Bool
 legalMonsterMove pos tnow m w = legalpos && timeSinceLastMove >= timeToNextMove
   where timeSinceLastMove = diffClockTimes tnow (lastMove m)
-        legalpos = notOnWall && notOnHero
+        legalpos = notOnWall && notOnHero && notOnMonster
 	notOnWall = (not $ pos `elem` (wall w))
 	notOnHero = (not $ pos == (position (hero w)))
+	notOnMonster = Map.notMember pos (monster w)
 	timeToNextMove = (TimeDiff 0 0 0 0 0 0 500000000000)
 
 calcMoveMonster :: World -> Coord -> Coord

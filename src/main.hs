@@ -8,11 +8,12 @@ import Control.Concurrent (threadDelay)
 import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 import System.Time
+import qualified Data.Map as Map
 
 import Sword.Utils
 import Sword.World
 
-level = "###########################\n#.........................#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
+level = "###########################\n#............x............#\n#...................@.....#\n#.........................#\n#.........................#\n#.........................#\n#......................x..#\n#.........................#\n#.........................#\n###########################"
 
 emptyHero = Hero {
   position = (0,0),
@@ -22,7 +23,6 @@ emptyHero = Hero {
 }
 
 emptyMonster = Monster {
-  mposition = (0,0),
   mlife = 5,
   lastMove = TOD 0 0
 }
@@ -34,7 +34,7 @@ emptyWorld = World {
   steps = 0,
   wMax = (0,0),
   hero = emptyHero,
-  monster = []
+  monster = Map.empty
 }
 
 loadLevel :: String -> ClockTime -> World
@@ -49,8 +49,8 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
           case elt of
             '@' -> wld{hero = (hero wld){ position = c },
 	      ground = c:ground wld}
-            'x' -> wld{monster = emptyMonster{mposition = c, lastMove = tnow}:
-	      (monster wld), ground = c:ground wld}
+            'x' -> wld{monster = Map.insert c emptyMonster{
+		    lastMove = tnow} (monster wld), ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '.' -> wld{ground = c:ground wld}
             otherwise -> error (show elt ++ " not recognized")
@@ -86,14 +86,14 @@ drawWorld world = do
   sequence (map drawWall (wall world))
   sequence (map drawGround (ground world))
   drawChar '@' (position (hero world))
-  sequence (map drawMonster (monster world))
+  sequence (Map.foldrWithKey drawMonster [] (monster world))
   drawHit (hero world)
   drawStats (hero world)
   drawLog (gamelog world) (0, 23)
   refresh
   where drawWall = drawChar '#'
 	drawGround = drawChar '.'
-        drawMonster (Monster x _ _) = drawChar 'x' x
+        drawMonster x _ acc = (drawChar 'x' x):acc
 
 drawChar :: Char -> Coord -> IO ()
 drawChar ' ' _ = return ()

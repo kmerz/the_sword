@@ -14,7 +14,7 @@ data Hero = Hero {
 
 data Monster = Monster {
   mlife :: Int,
-  lastMove :: ClockTime
+  mlastMove :: ClockTime
 } deriving (Show)
 
 data World = World {
@@ -98,8 +98,8 @@ moveMonster tnow c m w
         legalMove = legalMonsterMove nextMove m w
 	monsterMap = Map.delete c (monster w)
 	newMonsterMap = Map.union newMonster monsterMap
-	newMonster = Map.fromList [(nextMove, m{lastMove = tnow})]
-	timeSinceLastMove = diffClockTimes tnow (lastMove m)
+	newMonster = Map.fromList [(nextMove, m{mlastMove = tnow})]
+	timeSinceLastMove = diffClockTimes tnow (mlastMove m)
 	timeToNextMove = (TimeDiff 0 0 0 0 0 0 500000000000)
         timeToMove = timeSinceLastMove >= timeToNextMove
 
@@ -109,7 +109,7 @@ makeMonsterHit w c m tnow = w'
         newgamelog = "Monster hits you with 1":(gamelog w)
         newHero = (hero w){ life = newLife }
         newLife = if ((life (hero w)) - 1 <= 0) then 0 else (life (hero w)) - 1
-	newMonsterMap = Map.insert c m{lastMove = tnow} (monster w)
+	newMonsterMap = Map.insert c m{mlastMove = tnow} (monster w)
 
 legalMonsterMove :: Coord -> Monster -> World -> Bool
 legalMonsterMove pos m w = legalpos

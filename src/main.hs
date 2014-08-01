@@ -24,7 +24,7 @@ emptyHero = Hero {
 
 emptyMonster = Monster {
   mlife = 5,
-  lastMove = TOD 0 0
+  mlastMove = TOD 0 0
 }
 
 emptyWorld = World {
@@ -52,7 +52,7 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
             '@' -> wld{hero = (hero wld){ position = c },
 	      ground = c:ground wld}
             'x' -> wld{monster = Map.insert c emptyMonster{
-		    lastMove = tnow} (monster wld), ground = c:ground wld}
+		    mlastMove = tnow} (monster wld), ground = c:ground wld}
             '#' -> wld{wall = c:wall wld}
             '4' -> wld{trees = c:trees wld}
             '.' -> wld{ground = c:ground wld}

@@ -22,15 +22,40 @@ data World = World {
   monster :: Map.Map Coord Monster,
   wall  :: [Coord],
   ground :: [Coord],
+  trees :: [Coord],
   steps :: Int,
   wMax  :: Coord,
+  viewPort :: ViewPort,
   gamelog :: [[Char]]
 } deriving (Show)
 
 modifyWorld :: Input -> ClockTime -> World -> World
-modifyWorld input tnow world = mMove $ hMove $ world
+modifyWorld input tnow world = updateViewPort $ mMove $ hMove $ world
   where mMove = moveMonsters tnow
         hMove = moveHero input
+
+updateViewPort :: World -> World
+updateViewPort w = updateX' $ updateY' w
+  where heroPos = (position (hero w))
+        viewPortX = (fst (fst (viewPort w)), fst (snd (viewPort w)))
+        viewPortY = (snd (fst (viewPort w)), snd (snd (viewPort w)))
+        updateX' = updateX (fst heroPos) viewPortX viewPortY
+        updateY' = updateY (snd heroPos) viewPortY viewPortX
+
+updateX :: Int -> Coord -> Coord -> World -> World
+updateX x (x1, x2) (y1, y2) w
+  | (x - x1) <= 30 && x1 > 0 = w{ viewPort = ((x1 - 1, y1), (x2 - 1, y2))}
+  | (x2 - x) <= 30 && x2 <= (fst (wMax w)) =
+	      w{ viewPort = ((x1 + 1, y1), (x2 + 1, y2))}
+  | otherwise = w
+
+updateY :: Int -> Coord -> Coord -> World -> World
+updateY y (y1, y2) (x1, x2) w
+  | (y - y1) <= 2 && y1 > 0 = w{ viewPort = ((x1, y1 - 1), (x2, y2 - 1))}
+  | (y2 - y) <= 2 && y2 <= (snd (wMax w)) =
+	      w{ viewPort = ((x1, y1 + 1), (x2, y2 + 1))}
+  | otherwise = w
+
 
 moveHero :: Input -> World -> World
 moveHero input world

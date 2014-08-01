@@ -19,7 +19,8 @@ emptyHero = Hero {
   position = (0,0),
   life = 10,
   maxLife = 100,
-  hit = (None, (0,0))
+  hit = (None, (0,0)),
+  lastMove = TOD 0 0
 }
 
 emptyMonster = Monster {
@@ -42,14 +43,14 @@ emptyWorld = World {
 loadLevel :: String -> ClockTime -> World
 loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
   where lns     = lines str
-        coords  = [[(x,y) | x <- [0..]] | y <- [1..]]
+        coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
         elems   = concat $ zipWith zip coords lns
         maxX    = maximum . map (fst . fst) $ elems
         maxY    = maximum . map (snd . fst) $ elems
         maxi    = (maxX, maxY)
         consume wld (c, elt) =
           case elt of
-            '@' -> wld{hero = (hero wld){ position = c },
+            '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },
 	      ground = c:ground wld}
             'x' -> wld{monster = Map.insert c emptyMonster{
 		    mlastMove = tnow} (monster wld), ground = c:ground wld}
@@ -123,7 +124,7 @@ drawLog (x:xs) (a ,b) = do
   drawLog xs (0, b + 1)
 
 drawStats :: Hero -> ViewPort -> IO ()
-drawStats (Hero (x,y) life maxLife _) viewP = do
+drawStats (Hero (x,y) life maxLife _ _) viewP = do
   (drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22))
 
 main :: IO ()

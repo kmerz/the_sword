@@ -9,6 +9,7 @@ data Hero = Hero {
   position :: Coord,
   life :: Int,
   maxLife :: Int,
+  lastMove :: ClockTime,
   hit :: (Input, Coord)
 } deriving (Show)
 
@@ -32,7 +33,7 @@ data World = World {
 modifyWorld :: Input -> ClockTime -> World -> World
 modifyWorld input tnow world = updateViewPort $ mMove $ hMove $ world
   where mMove = moveMonsters tnow
-        hMove = moveHero input
+        hMove = moveHero tnow input
 
 updateViewPort :: World -> World
 updateViewPort w = updateX' $ updateY' w
@@ -57,11 +58,11 @@ updateY y (y1, y2) (x1, x2) w
   | otherwise = w
 
 
-moveHero :: Input -> World -> World
-moveHero input world
-  | needMove && legalMove = world{ hero = (hero world) {
-       position = newHeroPos }}
-  | strikeHit = (makeHit newHeroHit input m world)
+moveHero :: ClockTime -> Input -> World -> World
+moveHero tnow input world
+  | timeToMove && needMove && legalMove = world{ hero = (hero world) {
+       position = newHeroPos, lastMove = tnow }}
+  | timeToMove && strikeHit = (makeHit tnow newHeroHit input m world)
   | otherwise = world { hero = (hero world) { hit = (None, (0,0)) }}
   where heroPos = position (hero world)
         newHeroPos = newPos input heroPos
@@ -70,14 +71,17 @@ moveHero input world
 	strikeHit = input `elem` fightMoves
         legalMove = not $ newHeroPos `elem` (wall world)
 	m = Map.lookup newHeroHit (monster world)
+	timeSinceLastMove = diffClockTimes tnow (lastMove (hero world))
+	timeToNextMove = (TimeDiff 0 0 0 0 0 0 100000000000)
+        timeToMove = timeSinceLastMove >= timeToNextMove
 
-makeHit :: Coord -> Input -> Maybe Monster -> World -> World
-makeHit _ _ Nothing w = w { gamelog = ("You hit thin air."):(gamelog w) }
-makeHit c i (Just m) w = w { hero = newHero,
+makeHit :: ClockTime -> Coord -> Input -> Maybe Monster -> World -> World
+makeHit _ _ _ Nothing w = w { gamelog = ("You hit thin air."):(gamelog w) }
+makeHit tnow c i (Just m) w = w { hero = newHero,
   monster = newMonsterMap,
   gamelog = glog }
   where monsterMap = Map.delete c (monster w)
-        newHero = (hero w) { hit = (i, c) }
+        newHero = (hero w) { hit = (i, c), lastMove = tnow }
 	newMonsterMap = if newMonsterLife <= 0
 		       then monsterMap
 		       else Map.union newMonster monsterMap
@@ -100,7 +104,7 @@ moveMonster tnow c m w
 	newMonsterMap = Map.union newMonster monsterMap
 	newMonster = Map.fromList [(nextMove, m{mlastMove = tnow})]
 	timeSinceLastMove = diffClockTimes tnow (mlastMove m)
-	timeToNextMove = (TimeDiff 0 0 0 0 0 0 500000000000)
+	timeToNextMove = (TimeDiff 0 0 0 0 0 1 000000000000)
         timeToMove = timeSinceLastMove >= timeToNextMove
 
 makeMonsterHit :: World -> Coord -> Monster -> ClockTime -> World

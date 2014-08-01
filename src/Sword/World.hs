@@ -15,7 +15,8 @@ data Hero = Hero {
 
 data Monster = Monster {
   mlife :: Int,
-  mlastMove :: ClockTime
+  mlastMove :: ClockTime,
+  awake :: Bool
 } deriving (Show)
 
 data World = World {
@@ -31,7 +32,7 @@ data World = World {
 } deriving (Show)
 
 modifyWorld :: Input -> ClockTime -> World -> World
-modifyWorld input tnow world = updateViewPort $ mMove $ hMove $ world
+modifyWorld input tnow world = updateViewPort $ mMove $ alertMonsters $ hMove $ world
   where mMove = moveMonsters tnow
         hMove = moveHero tnow input
 
@@ -107,6 +108,25 @@ moveMonster tnow c m w
 	timeToNextMove = (TimeDiff 0 0 0 0 0 1 000000000000)
         timeToMove = timeSinceLastMove >= timeToNextMove
 
+alertMonsters :: World -> World
+alertMonsters w = Map.foldrWithKey (alertMonster heroPos) w (monster w)
+  where heroPos = (position (hero w))
+	monsters = (monster w)
+
+alertMonster :: Coord -> Coord -> Monster -> World -> World
+alertMonster heroPos monPos mon w
+  | (not isAwake) && wakesUp = newWorld
+  | isAwake && (not wakesUp) = newWorld
+  | otherwise = w
+  where isAwake = (awake mon)
+	newMon = mon{awake = (not isAwake)}
+	newMonsterMap = Map.insert monPos newMon (monster w)
+	newWorld = w{monster = newMonsterMap}
+	wakesUp = abs x <= 5 && abs y <= 5
+        vector = subtractCoords heroPos monPos
+	x = fst vector
+	y = snd vector
+
 makeMonsterHit :: World -> Coord -> Monster -> ClockTime -> World
 makeMonsterHit w c m tnow = w'
   where w' = w { gamelog = newgamelog, hero = newHero, monster = newMonsterMap}
@@ -117,9 +137,10 @@ makeMonsterHit w c m tnow = w'
 
 legalMonsterMove :: Coord -> Monster -> World -> Bool
 legalMonsterMove pos m w = legalpos
-  where legalpos = notOnWall && notOnHero && notOnMonster
+  where legalpos = notOnWall && notOnHero && notOnMonster && isAwake
 	notOnWall = (not $ pos `elem` (wall w))
 	notOnHero = (not $ pos == (position (hero w)))
+	isAwake = (awake m)
 	notOnMonster = Map.notMember pos (monster w)
 
 calcMoveMonster :: World -> Coord -> Coord

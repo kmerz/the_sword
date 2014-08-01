@@ -25,7 +25,8 @@ emptyHero = Hero {
 
 emptyMonster = Monster {
   mlife = 5,
-  mlastMove = TOD 0 0
+  mlastMove = TOD 0 0,
+  awake = False
 }
 
 emptyWorld = World {

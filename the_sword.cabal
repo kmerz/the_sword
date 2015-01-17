@@ -19,4 +19,4 @@ executable the_sword
   main-is:             main.hs
   other-modules:       Sword.Utils, Sword.World, Sword.Gui
   hs-source-dirs:      src/
-  build-depends:       containers, old-time, hscurses, base ==4.6.*
+  build-depends:       containers, old-time, hscurses, base, network

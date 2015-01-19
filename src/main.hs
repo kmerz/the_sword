@@ -1,11 +1,17 @@
 module Main where
 
-import System.IO (stdin, stdout, BufferMode( NoBuffering),
-  hSetEcho, hSetBuffering)
+import Network hiding (accept)
+import Network.Socket
+import System.Environment (getArgs)
+import System.IO
 import Prelude hiding (Either(..))
 import Data.Char
-import Control.Concurrent (threadDelay)
-import System.Time
+import Control.Exception
+import Control.Concurrent
+import Control.Concurrent.Chan
+import Control.Monad
+import Control.Monad.Fix (fix)
+import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import qualified Data.Map as Map
 
 import Sword.Utils
@@ -16,13 +22,11 @@ emptyHero = Hero {
   position = (0,0),
   life = 10,
   maxLife = 100,
-  hit = (None, (0,0)),
-  lastMove = TOD 0 0
+  hit = (None, (0,0))
 }
 
 emptyMonster = Monster {
   mlife = 5,
-  mlastMove = TOD 0 0,
   awake = False
 }
 
@@ -38,7 +42,7 @@ emptyWorld = World {
   monster = Map.empty
 }
 
-loadLevel :: String -> ClockTime -> World
+loadLevel :: String -> UTCTime -> World
 loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
   where lns     = lines str
         coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
@@ -60,8 +64,8 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
 gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
+  tnow <- getCurrentTime
   input <- getInput
-  tnow <- getClockTime
   if input == Quit  || (life (hero (world))) <= 0
     then return ()
     else gameLoop $ modifyWorld input tnow world
@@ -69,7 +73,7 @@ gameLoop world = do
 main :: IO ()
 main = do
   initGui
-  timeNow <- getClockTime
+  timeNow <- getCurrentTime
   level <- readFile "src/levels/0A_level.txt"
   world <- return $ (loadLevel level timeNow)
   gameLoop world

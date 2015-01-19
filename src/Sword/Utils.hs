@@ -11,7 +11,7 @@ data Input = Quit
 	| FightDown
 	| FightLeft
 	| FightRight
-	| None deriving (Show, Eq, Ord)
+	| None deriving (Show, Eq, Ord, Read)
 
 type Coord = (Int, Int)
 type ViewPort = (Coord, Coord)

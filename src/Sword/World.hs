@@ -2,22 +2,22 @@ module Sword.World where
 
 import qualified Data.Map as Map
 
-import System.Time
+import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import Sword.Utils
 
 data Hero = Hero {
   position :: Coord,
   life :: Int,
   maxLife :: Int,
-  lastMove :: ClockTime,
+  lastMove :: UTCTime,
   hit :: (Input, Coord)
-} deriving (Show)
+} deriving (Show, Read)
 
 data Monster = Monster {
   mlife :: Int,
-  mlastMove :: ClockTime,
+  mlastMove :: UTCTime,
   awake :: Bool
-} deriving (Show)
+} deriving (Show, Read)
 
 data World = World {
   hero  :: Hero,
@@ -29,9 +29,9 @@ data World = World {
   wMax  :: Coord,
   viewPort :: ViewPort,
   gamelog :: [[Char]]
-} deriving (Show)
+} deriving (Show, Read)
 
-modifyWorld :: Input -> ClockTime -> World -> World
+modifyWorld :: Input -> UTCTime -> World -> World
 modifyWorld input tnow world = updateViewPort $ mMove $ alertMonsters $ hMove $ world
   where mMove = moveMonsters tnow
         hMove = moveHero tnow input
@@ -59,7 +59,7 @@ updateY y (y1, y2) (x1, x2) w
   | otherwise = w
 
 
-moveHero :: ClockTime -> Input -> World -> World
+moveHero :: UTCTime -> Input -> World -> World
 moveHero tnow input world
   | timeToMove && needMove && legalMove = world{ hero = (hero world) {
        position = newHeroPos, lastMove = tnow }}
@@ -72,11 +72,11 @@ moveHero tnow input world
 	strikeHit = input `elem` fightMoves
         legalMove = not $ newHeroPos `elem` (wall world)
 	m = Map.lookup newHeroHit (monster world)
-	timeSinceLastMove = diffClockTimes tnow (lastMove (hero world))
-	timeToNextMove = (TimeDiff 0 0 0 0 0 0 100000000000)
+	timeSinceLastMove = diffUTCTime tnow (lastMove (hero world))
+	timeToNextMove = 0.1
         timeToMove = timeSinceLastMove >= timeToNextMove
 
-makeHit :: ClockTime -> Coord -> Input -> Maybe Monster -> World -> World
+makeHit :: UTCTime -> Coord -> Input -> Maybe Monster -> World -> World
 makeHit _ _ _ Nothing w = w { gamelog = ("You hit thin air."):(gamelog w) }
 makeHit tnow c i (Just m) w = w { hero = newHero,
   monster = newMonsterMap,
@@ -90,10 +90,10 @@ makeHit tnow c i (Just m) w = w { hero = newHero,
 	glog = "You hit with 1":(gamelog w)
         newMonster = Map.fromList[(c, m{ mlife = newMonsterLife })]
 
-moveMonsters :: ClockTime -> World -> World
+moveMonsters :: UTCTime -> World -> World
 moveMonsters tnow w = Map.foldrWithKey (moveMonster tnow) w (monster w)
 
-moveMonster :: ClockTime -> Coord -> Monster -> World -> World
+moveMonster :: UTCTime -> Coord -> Monster -> World -> World
 moveMonster tnow c m w
   | timeToMove && needMove && legalMove = w{monster = newMonsterMap}
   | timeToMove && (not needMove) = makeMonsterHit w c m tnow
@@ -104,8 +104,8 @@ moveMonster tnow c m w
 	monsterMap = Map.delete c (monster w)
 	newMonsterMap = Map.union newMonster monsterMap
 	newMonster = Map.fromList [(nextMove, m{mlastMove = tnow})]
-	timeSinceLastMove = diffClockTimes tnow (mlastMove m)
-	timeToNextMove = (TimeDiff 0 0 0 0 0 1 000000000000)
+	timeSinceLastMove = diffUTCTime tnow (mlastMove m)
+	timeToNextMove = 1.0
         timeToMove = timeSinceLastMove >= timeToNextMove
 
 alertMonsters :: World -> World
@@ -127,7 +127,7 @@ alertMonster heroPos monPos mon w
 	x = fst vector
 	y = snd vector
 
-makeMonsterHit :: World -> Coord -> Monster -> ClockTime -> World
+makeMonsterHit :: World -> Coord -> Monster -> UTCTime -> World
 makeMonsterHit w c m tnow = w'
   where w' = w { gamelog = newgamelog, hero = newHero, monster = newMonsterMap}
         newgamelog = "Monster hits you with 1":(gamelog w)

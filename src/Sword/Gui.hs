@@ -7,6 +7,7 @@ import Prelude hiding (Either(..))
 
 import Sword.Utils
 import Sword.World
+import Sword.Hero
 
 initGui :: IO ()
 initGui = do

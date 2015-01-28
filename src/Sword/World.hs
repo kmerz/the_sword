@@ -4,14 +4,7 @@ import qualified Data.Map as Map
 
 import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import Sword.Utils
-
-data Hero = Hero {
-  position :: Coord,
-  life :: Int,
-  maxLife :: Int,
-  lastMove :: UTCTime,
-  hit :: (Input, Coord)
-} deriving (Show, Read)
+import Sword.Hero
 
 data Monster = Monster {
   mlife :: Int,
@@ -34,7 +27,7 @@ data World = World {
 modifyWorld :: Input -> UTCTime -> World -> World
 modifyWorld input tnow world = updateViewPort $ mMove $ alertMonsters $ hMove $ world
   where mMove = moveMonsters tnow
-        hMove = moveHero tnow input
+        hMove = heroAction tnow input
 
 updateViewPort :: World -> World
 updateViewPort w = updateX' $ updateY' w
@@ -58,23 +51,17 @@ updateY y (y1, y2) (x1, x2) w
 	      w{ viewPort = ((x1, y1 + 1), (x2, y2 + 1))}
   | otherwise = w
 
-
-moveHero :: UTCTime -> Input -> World -> World
-moveHero tnow input world
-  | timeToMove && needMove && legalMove = world{ hero = (hero world) {
-       position = newHeroPos, lastMove = tnow }}
-  | timeToMove && strikeHit = (makeHit tnow newHeroHit input m world)
-  | otherwise = world { hero = (hero world) { hit = (None, (0,0)) }}
-  where heroPos = position (hero world)
-        newHeroPos = newPos input heroPos
-        newHeroHit = newHit input heroPos
-	needMove = not (newHeroPos == heroPos)
+heroAction :: UTCTime -> Input -> World -> World
+heroAction tnow input world@World{hero = h, wall = w, monster = mon}
+  | timeToMove && strikeHit = (makeHit tnow newHeroPos input m world)
+  | timeToMove && needMove && legalMove = world{hero = (moveHero h newHeroPos tnow)}
+  | otherwise = world { hero = h{hit = (None, (0,0))}}
+  where newHeroPos = newHeroCoord h input
+	timeToMove = timeToMoveHero h tnow
+	needMove = needHeroMove h newHeroPos
 	strikeHit = input `elem` fightMoves
-        legalMove = not $ newHeroPos `elem` (wall world)
-	m = Map.lookup newHeroHit (monster world)
-	timeSinceLastMove = diffUTCTime tnow (lastMove (hero world))
-	timeToNextMove = 0.1
-        timeToMove = timeSinceLastMove >= timeToNextMove
+        legalMove = not $ newHeroPos `elem` w
+	m = Map.lookup newHeroPos mon
 
 makeHit :: UTCTime -> Coord -> Input -> Maybe Monster -> World -> World
 makeHit _ _ _ Nothing w = w { gamelog = ("You hit thin air."):(gamelog w) }

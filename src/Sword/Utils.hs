@@ -35,17 +35,12 @@ insideViewPort ((x1, y1), (x2, y2)) (x, y) = xinside && yinside
 newPos :: Input -> Coord -> Coord
 newPos input coord =
   case input of
-      Up	-> addCoords (0, -1) coord
-      Down 	-> addCoords (0,  1) coord
-      Left 	-> addCoords (-1, 0) coord
-      Right 	-> addCoords (1,  0) coord
-      otherwise	-> coord
-
-newHit :: Input -> Coord -> Coord
-newHit input coord =
-  case input of
-      FightUp		-> addCoords (0, -1) coord
-      FightDown 	-> addCoords (0,  1) coord
-      FightLeft 	-> addCoords (-1, 0) coord
-      FightRight 	-> addCoords (1,  0) coord
-      otherwise		-> coord
+      Up	 -> addCoords (0, -1) coord
+      Down 	 -> addCoords (0,  1) coord
+      Left 	 -> addCoords (-1, 0) coord
+      Right 	 -> addCoords (1,  0) coord
+      FightUp	 -> addCoords (0, -1) coord
+      FightDown  -> addCoords (0,  1) coord
+      FightLeft  -> addCoords (-1, 0) coord
+      FightRight -> addCoords (1,  0) coord
+      otherwise	 -> coord

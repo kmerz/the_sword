@@ -16,6 +16,7 @@ import qualified Data.Map as Map
 
 import Sword.Utils
 import Sword.World
+import Sword.Hero
 import Sword.Gui
 
 emptyHero = Hero {

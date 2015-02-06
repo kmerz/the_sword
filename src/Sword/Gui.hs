@@ -41,9 +41,7 @@ castEnum = toEnum . fromEnum
 drawWorld :: World -> IO ()
 drawWorld world = do
   erase
-  sequence (map drawWall (wall world))
-  sequence (map drawGround (ground world))
-  sequence (map drawTrees (trees world))
+  sequence (Map.foldWithKey (drawObj $ world) [] (worldMap world))
   drawFunc '@' (position (hero world))
   sequence (Map.foldrWithKey drawMonster [] (monster world))
   drawStats (hero world) (viewPort world)
@@ -54,6 +52,14 @@ drawWorld world = do
 	drawTrees = drawFunc '4'
         drawMonster x _ acc = (drawFunc 'x' x):acc
 	drawFunc = drawElem (viewPort world)
+
+drawObj :: World -> Coord -> WorldObj ->  [IO ()] -> [IO ()]
+drawObj world c obj acc
+  | obj == Wall = (drawFunc '#' c):acc
+  | obj == Tree = (drawFunc '4' c):acc
+  | obj == Ground = (drawFunc '.' c):acc
+  | otherwise = (drawFunc ' ' c):acc
+  where drawFunc = drawElem (viewPort world)
 
 drawElem :: ViewPort -> Char -> Coord -> IO ()
 drawElem _ ' ' _ = return ()

@@ -3,6 +3,7 @@ module Sword.World where
 import qualified Data.Map as Map
 
 import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
+import Data.Maybe (isJust)
 import Sword.Utils
 import Sword.Hero
 
@@ -12,17 +13,21 @@ data Monster = Monster {
   awake :: Bool
 } deriving (Show, Read)
 
+data WorldObj = Ground | Wall | Tree deriving(Show, Eq, Ord, Enum, Read)
+type WorldMap = Map.Map Coord WorldObj
+
 data World = World {
   hero  :: Hero,
   monster :: Map.Map Coord Monster,
-  wall  :: [Coord],
-  ground :: [Coord],
-  trees :: [Coord],
+  worldMap :: WorldMap,
   steps :: Int,
   wMax  :: Coord,
   viewPort :: ViewPort,
   gamelog :: [[Char]]
 } deriving (Show, Read)
+
+legalPos :: World -> Coord -> Bool
+legalPos World{worldMap = m } c = Map.lookup c m == Just Ground
 
 modifyWorld :: Input -> UTCTime -> World -> World
 modifyWorld input tnow world = updateViewPort $ mMove $ alertMonsters $ hMove $ world
@@ -52,7 +57,7 @@ updateY y (y1, y2) (x1, x2) w
   | otherwise = w
 
 heroAction :: UTCTime -> Input -> World -> World
-heroAction tnow input world@World{hero = h, wall = w, monster = mon}
+heroAction tnow input world@World{hero = h, worldMap = worldM, monster = mon}
   | timeToMove && strikeHit = (makeHit tnow newHeroPos input m world)
   | timeToMove && needMove && legalMove = world{hero = (moveHero h newHeroPos tnow)}
   | otherwise = world { hero = h{hit = (None, (0,0))}}
@@ -60,7 +65,7 @@ heroAction tnow input world@World{hero = h, wall = w, monster = mon}
 	timeToMove = timeToMoveHero h tnow
 	needMove = needHeroMove h newHeroPos
 	strikeHit = input `elem` fightMoves
-        legalMove = not $ newHeroPos `elem` w
+        legalMove = legalPos world newHeroPos
 	m = Map.lookup newHeroPos mon
 
 makeHit :: UTCTime -> Coord -> Input -> Maybe Monster -> World -> World
@@ -123,9 +128,8 @@ makeMonsterHit w c m tnow = w'
 	newMonsterMap = Map.insert c m{mlastMove = tnow} (monster w)
 
 legalMonsterMove :: Coord -> Monster -> World -> Bool
-legalMonsterMove pos m w = legalpos
-  where legalpos = notOnWall && notOnHero && notOnMonster && isAwake
-	notOnWall = (not $ pos `elem` (wall w))
+legalMonsterMove pos m w = notOnObj && notOnHero && notOnMonster && isAwake
+  where notOnObj = legalPos w pos
 	notOnHero = (not $ pos == (position (hero w)))
 	isAwake = (awake m)
 	notOnMonster = Map.notMember pos (monster w)

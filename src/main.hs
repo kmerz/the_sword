@@ -33,9 +33,7 @@ emptyMonster = Monster {
 
 emptyWorld = World {
   gamelog = ["You should move.", "Welcome to The Sword"],
-  wall = [],
-  ground = [],
-  trees = [],
+  worldMap = Map.empty,
   steps = 0,
   wMax = (0,0),
   hero = emptyHero,
@@ -54,12 +52,13 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
         consume wld (c, elt) =
           case elt of
             '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },
-	      ground = c:ground wld}
+	      worldMap = (Map.insert c Ground (worldMap wld))}
             'x' -> wld{monster = Map.insert c emptyMonster{
-		    mlastMove = tnow} (monster wld), ground = c:ground wld}
-            '#' -> wld{wall = c:wall wld}
-            '4' -> wld{trees = c:trees wld}
-            '.' -> wld{ground = c:ground wld}
+		    mlastMove = tnow} (monster wld),
+		    worldMap = Map.insert c Ground (worldMap wld)}
+            '#' -> wld{worldMap = Map.insert c Wall (worldMap wld)}
+            '4' -> wld{worldMap = Map.insert c Tree (worldMap wld)}
+            '.' -> wld{worldMap = Map.insert c Ground (worldMap wld)}
             otherwise -> error (show elt ++ " not recognized")
 
 gameLoop :: World -> IO ()

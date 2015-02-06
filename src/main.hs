@@ -18,6 +18,7 @@ import Sword.Utils
 import Sword.World
 import Sword.Hero
 import Sword.Gui
+import Sword.Daemon
 
 emptyHero = Hero {
   position = (0,0),
@@ -72,6 +73,26 @@ gameLoop world = do
 
 main :: IO ()
 main = do
+  args <- getArgs
+  if (head args) == "deamon"
+    then daemonStart
+    else clientStart
+
+daemonStart :: IO ()
+daemonStart = do
+  chan <- newChan
+  sock <- socket AF_INET Stream 0
+  setSocketOption sock ReuseAddr 1
+  bindSocket sock (SockAddrInet 4242 iNADDR_ANY)
+  -- allow a maximum of 2 outstanding connections
+  listen sock 2
+  forkIO $ fix $ \loop -> do
+    (_, msg) <- readChan chan
+    loop
+  daemonLoop sock chan 0
+
+clientStart :: IO ()
+clientStart = do
   initGui
   timeNow <- getCurrentTime
   level <- readFile "src/levels/0A_level.txt"

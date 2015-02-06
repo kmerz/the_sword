@@ -20,48 +20,6 @@ import Sword.Hero
 import Sword.Gui
 import Sword.Daemon
 
-emptyHero = Hero {
-  position = (0,0),
-  life = 10,
-  maxLife = 100,
-  hit = (None, (0,0))
-}
-
-emptyMonster = Monster {
-  mlife = 5,
-  awake = False
-}
-
-emptyWorld = World {
-  gamelog = ["You should move.", "Welcome to The Sword"],
-  worldMap = Map.empty,
-  steps = 0,
-  wMax = (0,0),
-  hero = emptyHero,
-  viewPort = ((10,0),(90,20)),
-  monster = Map.empty
-}
-
-loadLevel :: String -> UTCTime -> World
-loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
-  where lns     = lines str
-        coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
-        elems   = concat $ zipWith zip coords lns
-        maxX    = maximum . map (fst . fst) $ elems
-        maxY    = maximum . map (snd . fst) $ elems
-        maxi    = (maxX, maxY)
-        consume wld (c, elt) =
-          case elt of
-            '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },
-	      worldMap = (Map.insert c Ground (worldMap wld))}
-            'x' -> wld{monster = Map.insert c emptyMonster{
-		    mlastMove = tnow} (monster wld),
-		    worldMap = Map.insert c Ground (worldMap wld)}
-            '#' -> wld{worldMap = Map.insert c Wall (worldMap wld)}
-            '4' -> wld{worldMap = Map.insert c Tree (worldMap wld)}
-            '.' -> wld{worldMap = Map.insert c Ground (worldMap wld)}
-            otherwise -> error (show elt ++ " not recognized")
-
 gameLoop :: World -> IO ()
 gameLoop world = do
   drawWorld world
@@ -78,24 +36,8 @@ main = do
     then daemonStart
     else clientStart
 
-daemonStart :: IO ()
-daemonStart = do
-  chan <- newChan
-  sock <- socket AF_INET Stream 0
-  setSocketOption sock ReuseAddr 1
-  bindSocket sock (SockAddrInet 4242 iNADDR_ANY)
-  -- allow a maximum of 2 outstanding connections
-  listen sock 2
-  forkIO $ fix $ \loop -> do
-    (_, msg) <- readChan chan
-    loop
-  daemonLoop sock chan 0
-
 clientStart :: IO ()
 clientStart = do
   initGui
-  timeNow <- getCurrentTime
-  level <- readFile "src/levels/0A_level.txt"
-  world <- return $ (loadLevel level timeNow)
-  gameLoop world
+  --gameLoop world
   endGui

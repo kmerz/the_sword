@@ -25,16 +25,16 @@ endGui = do
 getInput = do
   char <- getch
   case decodeKey char of
-    KeyChar 'k' -> return Up
-    KeyChar 'j' -> return Down
-    KeyChar 'h' -> return Left
-    KeyChar 'l' -> return Right
-    KeyChar 'K' -> return FightUp
-    KeyChar 'J' -> return FightDown
-    KeyChar 'H' -> return FightLeft
-    KeyChar 'L' -> return FightRight
-    KeyChar 'q' -> return Quit
-    otherwise -> return None
+    KeyChar 'k' -> return "k"
+    KeyChar 'j' -> return "j"
+    KeyChar 'h' -> return "h"
+    KeyChar 'l' -> return "l"
+    KeyChar 'K' -> return "K"
+    KeyChar 'J' -> return "J"
+    KeyChar 'H' -> return "H"
+    KeyChar 'L' -> return "L"
+    KeyChar 'q' -> return "quit"
+    otherwise -> return ""
 
 castEnum = toEnum . fromEnum
 
@@ -47,10 +47,7 @@ drawWorld world = do
   drawStats (hero world) (viewPort world)
   drawLog (gamelog world) (0, 23)
   refresh
-  where drawWall = drawFunc '#'
-	drawGround = drawFunc '.'
-	drawTrees = drawFunc '4'
-        drawMonster x _ acc = (drawFunc 'x' x):acc
+  where drawMonster x _ acc = (drawFunc 'x' x):acc
 	drawFunc = drawElem (viewPort world)
 
 drawObj :: World -> Coord -> WorldObj ->  [IO ()] -> [IO ()]

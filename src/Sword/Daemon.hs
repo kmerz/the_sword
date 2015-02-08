@@ -35,12 +35,15 @@ daemonStart = do
 daemonGameLoop :: Chan Msg -> World -> IO ()
 daemonGameLoop chan world = do
   (nr, input) <- readChan chan
-  case nr of
-    0 -> daemonGameLoop chan world --skip message from ourself
+  tnow <- getCurrentTime
+  case (nr, input) of
+    (0, _) -> do
+      daemonGameLoop chan (modifyWorld None tnow world) --skip message from ourself
+    (x, "") -> do
+      daemonGameLoop chan (modifyWorld None tnow world)--skip message from ourself
     otherwise -> do
-      tnow <- getCurrentTime
       newWorld <- return (modifyWorld (convertInput input) tnow world)
-      writeChan chan (0, "newWorld")
+      writeChan chan (0, ((show newWorld) ++ "\n"))
       daemonGameLoop chan newWorld
 
 daemonAcceptLoop :: Socket -> Chan Msg -> Int -> IO ()
@@ -52,18 +55,18 @@ daemonAcceptLoop sock chan nr = do
 runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
 runConn (sock, _) chan nr = do
   hdl <- socketToHandle sock ReadWriteMode
-  hSetBuffering hdl NoBuffering
+  hSetBuffering hdl LineBuffering
   name <- liftM init (hGetLine hdl)
   --putStrLn ("--> " ++ name ++ " entered game")
   --broadcast ("--> " ++ name ++ " entered.")
   chan' <- dupChan chan
   reader <- forkIO $ fix $ \loop -> do
     (nr', line) <- readChan chan'
-    putStrLn ((show nr) ++ ": msg arrived from:" ++ (show nr'))
     when (nr' == 0) $ hPutStrLn hdl line
+    hFlush hdl
     loop
   handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
-    line <- liftM init (hGetLine hdl)
+    line <- hGetLine hdl
     case line of
       "quit" -> hPutStrLn hdl "Bye!"
       _ -> do

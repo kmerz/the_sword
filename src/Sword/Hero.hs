@@ -21,7 +21,7 @@ timeToMoveHero Hero {lastMove=lastTime} tnow = timeToMove
 	timeToMove = timeSinceLastMove >= timeToNextMove
 
 needHeroMove :: Hero -> Coord -> Bool
-needHeroMove Hero {position = pos} newPos = not (newPos == pos)
+needHeroMove Hero {position = pos} newPos = newPos /= pos
 
 moveHero :: Hero -> Coord -> UTCTime -> Hero
 moveHero h@(Hero {position = pos}) newPos t = h{position = newPos, lastMove = t}

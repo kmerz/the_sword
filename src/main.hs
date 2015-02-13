@@ -33,7 +33,7 @@ gameLoop world = do
 main :: IO ()
 main = do
   args <- getArgs
-  case (head args) of
+  case head args of
     "deamon" -> daemonStart
     "client" -> clientStart
     otherwise -> return ()
@@ -41,7 +41,7 @@ main = do
 clientStart :: IO ()
 clientStart = do
   handle <- connectTo "127.0.0.1" (PortNumber 4242)
-  clientLoop handle `finally` (finish handle)
+  clientLoop handle `finally` finish handle
 
 finish :: Handle -> IO ()
 finish handle = do
@@ -60,15 +60,15 @@ clientLoop handle = do
     return ()
   where
     fromServer world = do
-      drawWorld (world)
+      drawWorld world
       line <- hGetLine handle
-      newWorld <- return $ case line of
+      let newWorld = case line of
 		   "" -> world
-		   otherwise -> (read line) :: World
+		   otherwise -> read line :: World
       fromServer newWorld
     toServer = do
       line <- getInput
       case line of
         "quit" -> do hPutStrLn handle "quit"; return "Quit"
-        "" -> do toServer
+        "" -> toServer
         _ ->  do hPutStrLn handle (line ++ "\n"); toServer

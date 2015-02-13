@@ -22,7 +22,7 @@ daemonStart :: IO ()
 daemonStart = do
   timeNow <- getCurrentTime
   level <- readFile "src/levels/0A_level.txt"
-  world <- return $ (loadLevel level timeNow)
+  let world = loadLevel level timeNow
   chan <- newChan
   sock <- socket AF_INET Stream 0
   setSocketOption sock ReuseAddr 1
@@ -37,13 +37,13 @@ daemonGameLoop chan world = do
   (nr, input) <- readChan chan
   tnow <- getCurrentTime
   case (nr, input) of
-    (0, _) -> do
+    (0, _) ->
       daemonGameLoop chan (modifyWorld None tnow world) --skip message from ourself
-    (x, "") -> do
+    (x, "") ->
       daemonGameLoop chan (modifyWorld None tnow world)--skip message from ourself
     otherwise -> do
-      newWorld <- return (modifyWorld (convertInput input) tnow world)
-      writeChan chan (0, ((show newWorld) ++ "\n"))
+      let newWorld = modifyWorld (convertInput input) tnow world
+      writeChan chan (0, show newWorld ++ "\n")
       daemonGameLoop chan newWorld
 
 daemonAcceptLoop :: Socket -> Chan Msg -> Int -> IO ()
@@ -109,7 +109,7 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
         consume wld (c, elt) =
           case elt of
 	    '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },
-	            worldMap = (Map.insert c Ground (worldMap wld))}
+	            worldMap = Map.insert c Ground (worldMap wld)}
             'x' -> wld{monster = Map.insert c emptyMonster{
 		    mlastMove = tnow} (monster wld),
 		    worldMap = Map.insert c Ground (worldMap wld)}
@@ -118,7 +118,7 @@ loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
             '.' -> wld{worldMap = Map.insert c Ground (worldMap wld)}
             otherwise -> error (show elt ++ " not recognized")
 
-convertInput :: [Char] -> Input
+convertInput :: String -> Input
 convertInput (char:xs) =
   case char of
     'k' -> Up

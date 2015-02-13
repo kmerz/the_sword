@@ -1,5 +1,6 @@
 module Sword.Gui where
 
+import Control.Monad (when)
 import UI.HSCurses.Curses
 import UI.HSCurses.CursesHelper
 import qualified Data.Map as Map
@@ -19,8 +20,7 @@ initGui = do
   return ()
 
 endGui :: IO ()
-endGui = do
-  endWin
+endGui = endWin
 
 getInput = do
   char <- getch
@@ -41,34 +41,34 @@ castEnum = toEnum . fromEnum
 drawWorld :: World -> IO ()
 drawWorld world = do
   erase
-  sequence (Map.foldWithKey (drawObj $ world) [] (worldMap world))
+  sequence_ (Map.foldWithKey (drawObj world) [] (worldMap world))
   drawFunc '@' (position (hero world))
-  sequence (Map.foldrWithKey drawMonster [] (monster world))
+  sequence_ (Map.foldrWithKey drawMonster [] (monster world))
   drawStats (hero world) (viewPort world)
   drawLog (gamelog world) (0, 23)
   refresh
-  where drawMonster x _ acc = (drawFunc 'x' x):acc
+  where drawMonster x _ acc = drawFunc 'x' x : acc
 	drawFunc = drawElem (viewPort world)
 
 drawObj :: World -> Coord -> WorldObj ->  [IO ()] -> [IO ()]
 drawObj world c obj acc
-  | obj == Wall = (drawFunc '#' c):acc
-  | obj == Tree = (drawFunc '4' c):acc
-  | obj == Ground = (drawFunc '.' c):acc
-  | otherwise = (drawFunc ' ' c):acc
+  | obj == Wall = drawFunc '#' c : acc
+  | obj == Tree = drawFunc '4' c : acc
+  | obj == Ground = drawFunc '.' c : acc
+  | otherwise = drawFunc ' ' c : acc
   where drawFunc = drawElem (viewPort world)
 
 drawElem :: ViewPort -> Char -> Coord -> IO ()
 drawElem _ ' ' _ = return ()
-drawElem viewPort char coord = if insideViewPort viewPort coord
-  then drawChar char (subtractCoords coord (fst viewPort ))
-  else return ()
+drawElem viewPort char coord =
+  when (insideViewPort viewPort coord) $
+    drawChar char (subtractCoords coord (fst viewPort))
 
 drawChar :: Char -> Coord -> IO ()
 drawChar ' ' _ = return ()
 drawChar char (x, y) = mvAddCh y x (castEnum char)
 
-drawString :: [Char] -> Coord -> IO ()
+drawString :: String -> Coord -> IO ()
 drawString [] _ = return ()
 drawString (x:xs) (a, b) = do
   drawChar x (a, b)
@@ -81,5 +81,5 @@ drawLog (x:xs) (a ,b) = do
   drawLog xs (0, b + 1)
 
 drawStats :: Hero -> ViewPort -> IO ()
-drawStats (Hero (x,y) life maxLife _ _) viewP = do
-  (drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22))
+drawStats (Hero (x,y) life maxLife _ _) viewP =
+  drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22)

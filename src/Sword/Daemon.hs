@@ -92,20 +92,16 @@ emptyWorld = World {
   gamelog = ["You should move.", "Welcome to The Sword"],
   worldMap = Map.empty,
   steps = 0,
-  wMax = (0,0),
   hero = emptyHero,
   viewPort = ((10,0),(90,20)),
   monster = Map.empty
 }
 
 loadLevel :: String -> UTCTime -> World
-loadLevel str tnow = foldl consume (emptyWorld{wMax = maxi}) elems
+loadLevel str tnow = foldl consume (emptyWorld) elems
   where lns     = lines str
         coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
         elems   = concat $ zipWith zip coords lns
-        maxX    = maximum . map (fst . fst) $ elems
-        maxY    = maximum . map (snd . fst) $ elems
-        maxi    = (maxX, maxY)
         consume wld (c, elt) =
           case elt of
 	    '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },

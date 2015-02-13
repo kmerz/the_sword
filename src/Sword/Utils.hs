@@ -14,7 +14,6 @@ data Input = Quit
 	| None deriving (Show, Eq, Ord, Read)
 
 type Coord = (Int, Int)
-type ViewPort = (Coord, Coord)
 
 fightMoves = [FightUp, FightDown, FightLeft, FightRight]
 
@@ -26,11 +25,6 @@ addCoords (a, b) (x, y) = (a + x, b + y)
 
 fstsnd :: (a,b,c) -> (a,b)
 fstsnd (a,b,_) = (a,b)
-
-insideViewPort :: ViewPort -> Coord -> Bool
-insideViewPort ((x1, y1), (x2, y2)) (x, y) = xinside && yinside
-  where xinside = (x1 <= x) && (x < x2)
-	yinside = (y1 <= y) && (y < y2)
 
 newPos :: Input -> Coord -> Coord
 newPos input coord =

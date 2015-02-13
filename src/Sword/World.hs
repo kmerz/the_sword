@@ -6,6 +6,7 @@ import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import Data.Maybe (isJust)
 import Sword.Utils
 import Sword.Hero
+import Sword.ViewPorter
 
 data Monster = Monster {
   mlife :: Int,
@@ -21,50 +22,32 @@ data World = World {
   monster :: Map.Map Coord Monster,
   worldMap :: WorldMap,
   steps :: Int,
-  wMax  :: Coord,
   viewPort :: ViewPort,
   gamelog :: [String]
 } deriving (Show, Read)
+
+wMax :: World -> Coord
+wMax World{worldMap = w} = Map.foldWithKey findMax (0,0) w
+  where findMax a _ acc = if a > acc then a else acc
 
 legalPos :: World -> Coord -> Bool
 legalPos World{worldMap = m } c = Map.lookup c m == Just Ground
 
 modifyWorld :: Input -> UTCTime -> World -> World
-modifyWorld input tnow world = updateViewPort $ mMove $ alertMonsters $ hMove world
+modifyWorld input tnow world = mMove $ alertMonsters $ hMove world
   where mMove = moveMonsters tnow
         hMove = heroAction tnow input
 
-updateViewPort :: World -> World
-updateViewPort w = updateX' $ updateY' w
-  where heroPos = position (hero w)
-        viewPortX = (fst (fst (viewPort w)), fst (snd (viewPort w)))
-        viewPortY = (snd (fst (viewPort w)), snd (snd (viewPort w)))
-        updateX' = updateX (fst heroPos) viewPortX viewPortY
-        updateY' = updateY (snd heroPos) viewPortY viewPortX
-
-updateX :: Int -> Coord -> Coord -> World -> World
-updateX x (x1, x2) (y1, y2) w
-  | (x - x1) <= 30 && x1 > 0 = w{ viewPort = ((x1 - 1, y1), (x2 - 1, y2))}
-  | (x2 - x) <= 30 && x2 <= fst (wMax w) =
-	      w{ viewPort = ((x1 + 1, y1), (x2 + 1, y2))}
-  | otherwise = w
-
-updateY :: Int -> Coord -> Coord -> World -> World
-updateY y (y1, y2) (x1, x2) w
-  | (y - y1) <= 2 && y1 > 0 = w{ viewPort = ((x1, y1 - 1), (x2, y2 - 1))}
-  | (y2 - y) <= 2 && y2 <= snd (wMax w) =
-	      w{ viewPort = ((x1, y1 + 1), (x2, y2 + 1))}
-  | otherwise = w
-
 heroAction :: UTCTime -> Input -> World -> World
-heroAction tnow input world@World{hero = h, worldMap = worldM, monster = mon}
+heroAction tnow input world@World{hero = h, worldMap = worldM, monster = mon, viewPort = vPort}
   | timeToMove && strikeHit = makeHit tnow newHeroPos input m world
-  | timeToMove && needMove && legalMove = world{hero = moveHero h newHeroPos tnow}
+  | timeToMove && needMove && legalMove = world{hero = moveHero h newHeroPos tnow, viewPort = vPort'}
   | otherwise = world { hero = h{hit = (None, (0,0))}}
   where newHeroPos = newHeroCoord h input
 	timeToMove = timeToMoveHero h tnow
 	needMove = needHeroMove h newHeroPos
 	strikeHit = input `elem` fightMoves
+	vPort' = updateViewPort vPort newHeroPos (wMax world)
         legalMove = legalPos world newHeroPos
 	m = Map.lookup newHeroPos mon
 

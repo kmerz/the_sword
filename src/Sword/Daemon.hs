@@ -22,43 +22,42 @@ daemonStart :: IO ()
 daemonStart = do
   timeNow <- getCurrentTime
   level <- readFile "src/levels/0A_level.txt"
-  let world = loadLevel level timeNow
+  let (world, worldMap) = loadLevel level timeNow
   chan <- newChan
   sock <- socket AF_INET Stream 0
   setSocketOption sock ReuseAddr 1
   bindSocket sock (SockAddrInet 4242 iNADDR_ANY)
   -- allow a maximum of 2 outstanding connections
   listen sock 2
-  forkIO (daemonGameLoop chan world)
-  daemonAcceptLoop sock chan 1
+  forkIO (daemonGameLoop chan world worldMap)
+  daemonAcceptLoop worldMap sock chan 1
 
-daemonGameLoop :: Chan Msg -> World -> IO ()
-daemonGameLoop chan world = do
+daemonGameLoop :: Chan Msg -> World -> WorldMap -> IO ()
+daemonGameLoop chan world worldM = do
   (nr, input) <- readChan chan
   tnow <- getCurrentTime
   case (nr, input) of
     (0, _) ->
-      daemonGameLoop chan (modifyWorld None tnow world)
+      daemonGameLoop chan (modifyWorld None tnow worldM world) worldM
     (x, "") ->
-      daemonGameLoop chan (modifyWorld None tnow world)
+      daemonGameLoop chan (modifyWorld None tnow worldM world) worldM
     otherwise -> do
-      let newWorld = modifyWorld (convertInput input) tnow world
+      let newWorld = modifyWorld (convertInput input) tnow worldM world
       writeChan chan (0, show newWorld ++ "\n")
-      daemonGameLoop chan newWorld
+      daemonGameLoop chan newWorld worldM
 
-daemonAcceptLoop :: Socket -> Chan Msg -> Int -> IO ()
-daemonAcceptLoop sock chan nr = do
+daemonAcceptLoop :: WorldMap -> Socket -> Chan Msg -> Int -> IO ()
+daemonAcceptLoop wldMap sock chan nr = do
   conn <- accept sock
-  forkIO (runConn conn chan nr)
-  daemonAcceptLoop sock chan $! nr + 1
+  forkIO (runConn conn chan nr wldMap)
+  daemonAcceptLoop wldMap sock chan $! nr + 1
 
-runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> IO ()
-runConn (sock, _) chan nr = do
+runConn :: (Socket, SockAddr) -> Chan Msg -> Int -> WorldMap -> IO ()
+runConn (sock, _) chan nr worldMap = do
   hdl <- socketToHandle sock ReadWriteMode
   hSetBuffering hdl LineBuffering
   name <- liftM init (hGetLine hdl)
-  --putStrLn ("--> " ++ name ++ " entered game")
-  --broadcast ("--> " ++ name ++ " entered.")
+  hPutStrLn hdl (show worldMap ++ "\n")
   chan' <- dupChan chan
   reader <- forkIO $ fix $ \loop -> do
     (nr', line) <- readChan chan'
@@ -90,28 +89,25 @@ emptyMonster = Monster {
 
 emptyWorld = World {
   gamelog = ["You should move.", "Welcome to The Sword"],
-  worldMap = Map.empty,
-  steps = 0,
   hero = emptyHero,
   viewPort = ((10,0),(90,20)),
   monster = Map.empty
 }
 
-loadLevel :: String -> UTCTime -> World
-loadLevel str tnow = foldl consume (emptyWorld) elems
+loadLevel :: String -> UTCTime -> (World, WorldMap)
+loadLevel str tnow = foldl consume (emptyWorld, Map.empty) elems
   where lns     = lines str
         coords  = [[(x,y) | x <- [0..]] | y <- [0..]]
         elems   = concat $ zipWith zip coords lns
-        consume wld (c, elt) =
+        consume (wld, wldMap) (c, elt) =
           case elt of
-	    '@' -> wld{hero = (hero wld){ position = c, lastMove = tnow },
-	            worldMap = Map.insert c Ground (worldMap wld)}
-            'x' -> wld{monster = Map.insert c emptyMonster{
-		    mlastMove = tnow} (monster wld),
-		    worldMap = Map.insert c Ground (worldMap wld)}
-            '#' -> wld{worldMap = Map.insert c Wall (worldMap wld)}
-            '4' -> wld{worldMap = Map.insert c Tree (worldMap wld)}
-            '.' -> wld{worldMap = Map.insert c Ground (worldMap wld)}
+	    '@' -> (wld{hero = (hero wld){ position = c, lastMove = tnow }},
+	             Map.insert c Ground wldMap)
+            'x' -> (wld{monster = Map.insert c emptyMonster{mlastMove = tnow} (monster wld)},
+		     Map.insert c Ground wldMap)
+            '#' -> (wld, Map.insert c Wall wldMap)
+            '4' -> (wld, Map.insert c Tree wldMap)
+            '.' -> (wld, Map.insert c Ground wldMap)
             otherwise -> error (show elt ++ " not recognized")
 
 convertInput :: String -> Input

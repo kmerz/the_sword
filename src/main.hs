@@ -45,18 +45,18 @@ clientLoop handle = do
     hSetNewlineMode handle universalNewlineMode
     hSetBuffering handle LineBuffering
     hPutStrLn handle "kmerz"
-    hPutStrLn handle "k"
+    worldMap <- hGetLine handle
     initGui
-    _ <- race (fromServer emptyWorld) toServer
+    _ <- race (fromServer (read worldMap :: WorldMap) emptyWorld) toServer
     return ()
   where
-    fromServer world = do
-      drawWorld world
+    fromServer worldMap world = do
+      drawWorld worldMap world
       line <- hGetLine handle
       let newWorld = case line of
 		   "" -> world
 		   otherwise -> read line :: World
-      fromServer newWorld
+      fromServer worldMap newWorld
     toServer = do
       line <- getInput
       case line of

@@ -39,10 +39,10 @@ getInput = do
 
 castEnum = toEnum . fromEnum
 
-drawWorld :: World -> IO ()
-drawWorld world = do
+drawWorld :: WorldMap -> World -> IO ()
+drawWorld worldMap world = do
   erase
-  sequence_ (Map.foldWithKey (drawObj world) [] (worldMap world))
+  sequence_ (Map.foldWithKey (drawObj world) [] worldMap)
   drawFunc '@' (position (hero world))
   sequence_ (Map.foldrWithKey drawMonster [] (monster world))
   drawStats (hero world) (viewPort world)

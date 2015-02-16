@@ -38,9 +38,9 @@ daemonGameLoop chan world = do
   tnow <- getCurrentTime
   case (nr, input) of
     (0, _) ->
-      daemonGameLoop chan (modifyWorld None tnow world) --skip message from ourself
+      daemonGameLoop chan (modifyWorld None tnow world)
     (x, "") ->
-      daemonGameLoop chan (modifyWorld None tnow world)--skip message from ourself
+      daemonGameLoop chan (modifyWorld None tnow world)
     otherwise -> do
       let newWorld = modifyWorld (convertInput input) tnow world
       writeChan chan (0, show newWorld ++ "\n")

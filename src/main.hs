@@ -21,20 +21,11 @@ import Sword.Hero
 import Sword.Gui
 import Sword.Daemon
 
-{--gameLoop :: World -> IO ()
-gameLoop world = do
-  drawWorld world
-  tnow <- getCurrentTime
-  input <- getInput
-  if input == Quit  || (life (hero (world))) <= 0
-    then return ()
-    else gameLoop $ modifyWorld input tnow world --}
-
 main :: IO ()
 main = do
   args <- getArgs
   case head args of
-    "deamon" -> daemonStart
+    "daemon" -> daemonStart
     "client" -> clientStart
     otherwise -> return ()
 

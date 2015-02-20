@@ -43,12 +43,13 @@ drawWorld :: WorldMap -> World -> IO ()
 drawWorld worldMap world = do
   erase
   sequence_ (Map.foldWithKey (drawObj world) [] worldMap)
-  drawFunc '@' (position (hero world))
+  sequence_ (Map.fold drawHero [] (heros world))
   sequence_ (Map.foldrWithKey drawMonster [] (monster world))
-  drawStats (hero world) (viewPort world)
+  --drawStats (hero world) (viewPort world)
   drawLog (gamelog world) (0, 23)
   refresh
   where drawMonster x _ acc = drawFunc 'x' x : acc
+	drawHero h acc = drawFunc '@' (position h) : acc
 	drawFunc = drawElem (viewPort world)
 
 drawObj :: World -> Coord -> WorldObj ->  [IO ()] -> [IO ()]
@@ -81,6 +82,6 @@ drawLog (x:xs) (a ,b) = do
   drawString x (a, b)
   drawLog xs (0, b + 1)
 
-drawStats :: Hero -> ViewPort -> IO ()
+{--drawStats :: Hero -> ViewPort -> IO ()
 drawStats (Hero (x,y) life maxLife _ _) viewP =
-  drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22)
+  drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22) --}

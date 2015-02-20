@@ -16,7 +16,7 @@ import Sword.World
 import Sword.Hero
 import Sword.Gui
 
-type Msg = (Int, String)
+type Msg = (Int, String, String)
 
 daemonStart :: IO ()
 daemonStart = do
@@ -34,17 +34,22 @@ daemonStart = do
 
 daemonGameLoop :: Chan Msg -> World -> WorldMap -> IO ()
 daemonGameLoop chan world worldM = do
-  (nr, input) <- readChan chan
+  (nr, input, arg) <- readChan chan
   tnow <- getCurrentTime
-  case (nr, input) of
-    (0, _) ->
-      daemonGameLoop chan (modifyWorld None tnow worldM world) worldM
-    (x, "") ->
-      daemonGameLoop chan (modifyWorld None tnow worldM world) worldM
-    otherwise -> do
-      let newWorld = modifyWorld (convertInput input) tnow worldM world
-      writeChan chan (0, show newWorld ++ "\n")
+  case (nr, input, arg) of
+    (0, _, _) ->
+      daemonGameLoop chan (modifyWorld 0 None tnow worldM world) worldM
+    (x, "", _) ->
+      daemonGameLoop chan (modifyWorld 0 None tnow worldM world) worldM
+    (x, input, "") -> do
+      let newWorld = modifyWorld x (convertInput input) tnow worldM world
+      writeChan chan (0, show newWorld ++ "\n", "")
       daemonGameLoop chan newWorld worldM
+    (x, "login", name) ->
+      daemonGameLoop chan (addHero name x tnow world) worldM
+    otherwise -> do
+      --putStrLn "??: " ++ nr ++ " " ++ input ++ " " ++ arg
+      daemonGameLoop chan world worldM
 
 daemonAcceptLoop :: WorldMap -> Socket -> Chan Msg -> Int -> IO ()
 daemonAcceptLoop wldMap sock chan nr = do
@@ -59,8 +64,9 @@ runConn (sock, _) chan nr worldMap = do
   name <- liftM init (hGetLine hdl)
   hPutStrLn hdl (show worldMap ++ "\n")
   chan' <- dupChan chan
+  writeChan chan' (nr, "login", name)
   reader <- forkIO $ fix $ \loop -> do
-    (nr', line) <- readChan chan'
+    (nr', line, _) <- readChan chan'
     when (nr' == 0) $ hPutStrLn hdl line
     hFlush hdl
     loop
@@ -69,18 +75,11 @@ runConn (sock, _) chan nr worldMap = do
     case line of
       "quit" -> hPutStrLn hdl "Bye!"
       _ -> do
-        writeChan chan (nr, line)
+        writeChan chan (nr, line, "")
 	loop
     killThread reader
     hClose hdl
     loop
-
-emptyHero = Hero {
-  position = (3,5),
-  life = 10,
-  maxLife = 100,
-  hit = (None, (0,0))
-}
 
 emptyMonster = Monster {
   mlife = 5,
@@ -89,7 +88,7 @@ emptyMonster = Monster {
 
 emptyWorld = World {
   gamelog = ["You should move.", "Welcome to The Sword"],
-  hero = emptyHero,
+  heros = Map.empty,
   viewPort = ((10,0),(90,20)),
   monster = Map.empty
 }
@@ -101,8 +100,7 @@ loadLevel str tnow = foldl consume (emptyWorld, Map.empty) elems
         elems   = concat $ zipWith zip coords lns
         consume (wld, wldMap) (c, elt) =
           case elt of
-	    '@' -> (wld{hero = (hero wld){ position = c, lastMove = tnow }},
-	             Map.insert c Ground wldMap)
+	    '@' -> (wld, Map.insert c Ground wldMap)
             'x' -> (wld{monster = Map.insert c emptyMonster{mlastMove = tnow} (monster wld)},
 		     Map.insert c Ground wldMap)
             '#' -> (wld, Map.insert c Wall wldMap)

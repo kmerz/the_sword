@@ -6,6 +6,7 @@ import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 data Hero = Hero {
   position :: Coord,
   life :: Int,
+  name :: String,
   maxLife :: Int,
   lastMove :: UTCTime,
   hit :: (Input, Coord)

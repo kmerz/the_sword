@@ -25,6 +25,8 @@ data World = World {
   gamelog :: [String]
 } deriving (Show, Read)
 
+emptyHero = Hero{position = (0,0)}
+
 addHero :: String -> Int -> UTCTime -> World -> World
 addHero name id tnow world@World{heros = h} = world{heros = newHeros}
   where newHeros = Map.insert id Hero{
@@ -36,12 +38,11 @@ addHero name id tnow world@World{heros = h} = world{heros = newHeros}
     hit = (None, (0,0))} h
 
 nearestHero :: Coord -> Heros -> (Int, Hero)
-nearestHero c heros = Map.foldWithKey (findNext c) (0, emptyH) heros
+nearestHero c heros = Map.foldWithKey (findNext c) (0, emptyHero) heros
   where findNext _ id h (0, _) = (id, h)
         findNext c id h acc =
           if (position h) < position (snd acc) && (position h) < c
           then (id, h) else acc
-	emptyH = Hero{position = (0,0)}
 
 wMax :: WorldMap -> Coord
 wMax w = Map.foldWithKey findMax (0,0) w
@@ -94,11 +95,12 @@ needMonsterMove c heros = Map.foldrWithKey (needMove c) False heros
 
 moveMonster :: UTCTime -> WorldMap -> Coord -> Monster ->  World -> World
 moveMonster tnow wM c m w@World{heros = h}
-  | timeToMove && needMove && legalMove = w{monster = newMonsterMap}
-  | timeToMove && not needMove = makeMonsterHit w c m tnow
+  | isAwake && timeToMove && needMove && legalMove = w{monster = newMonsterMap}
+  | isAwake && timeToMove && not needMove = makeMonsterHit w c m tnow
   | otherwise = w
   where nextMove = calcMoveMonster w c
 	needMove = needMonsterMove nextMove h
+	isAwake = awake m
         legalMove = legalMonsterMove nextMove m wM w
 	monsterMap = Map.delete c (monster w)
 	newMonsterMap = Map.union newMonster monsterMap

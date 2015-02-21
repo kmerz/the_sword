@@ -30,7 +30,15 @@ daemonStart = do
   -- allow a maximum of 2 outstanding connections
   listen sock 2
   forkIO (daemonGameLoop chan world worldMap)
+  newChan <- dupChan chan
+  forkIO (monsterAlert newChan)
   daemonAcceptLoop worldMap sock chan 1
+
+monsterAlert :: Chan Msg -> IO ()
+monsterAlert chan = do
+  threadDelay 500000
+  writeChan chan (5, "", "")
+  monsterAlert chan
 
 daemonGameLoop :: Chan Msg -> World -> WorldMap -> IO ()
 daemonGameLoop chan world worldM = do
@@ -39,8 +47,10 @@ daemonGameLoop chan world worldM = do
   case (nr, input, arg) of
     (0, _, _) ->
       daemonGameLoop chan (modifyWorld 0 None tnow worldM world) worldM
-    (x, "", _) ->
-      daemonGameLoop chan (modifyWorld 0 None tnow worldM world) worldM
+    (x, "", _) -> do
+      let newxWorld = modifyWorld 0 None tnow worldM world
+      writeChan chan (0, show newxWorld ++ "\n", "")
+      daemonGameLoop chan (newxWorld) worldM
     (x, input, "") -> do
       let newWorld = modifyWorld x (convertInput input) tnow worldM world
       writeChan chan (0, show newWorld ++ "\n", "")

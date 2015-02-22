@@ -11,14 +11,14 @@ import Sword.World
 import Sword.Hero
 import Sword.ViewPorter
 
-initGui :: IO ()
+initGui :: IO (ViewPort)
 initGui = do
   initCurses
   echo False
   noDelay stdScr True
   cursSet CursorInvisible
   (sizeY, sizeX) <- scrSize
-  return ()
+  return ((0, 0), (sizeX, sizeY - 5))
 
 endGui :: IO ()
 endGui = endWin
@@ -50,7 +50,7 @@ drawWorld (Just hero) viewPort worldMap world = do
   drawLog (gamelog world) (0, 23)
   refresh
   where drawMonster x _ acc = drawFunc 'x' x : acc
-	drawHero h acc = drawFunc '@' (position h) : acc
+	drawHero h acc = (drawFunc '@' (position h)) : acc
 	drawFunc = drawElem viewPort
 
 drawObj :: ViewPort -> Coord -> WorldObj ->  [IO ()] -> [IO ()]

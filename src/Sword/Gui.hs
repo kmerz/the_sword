@@ -39,26 +39,27 @@ getInput = do
 
 castEnum = toEnum . fromEnum
 
-drawWorld :: WorldMap -> World -> IO ()
-drawWorld worldMap world = do
+drawWorld :: Maybe Hero -> ViewPort -> WorldMap -> World -> IO ()
+drawWorld Nothing _ _ _ = return ()
+drawWorld (Just hero) viewPort worldMap world = do
   erase
-  sequence_ (Map.foldWithKey (drawObj world) [] worldMap)
+  sequence_ (Map.foldWithKey (drawObj viewPort) [] worldMap)
   sequence_ (Map.fold drawHero [] (heros world))
   sequence_ (Map.foldrWithKey drawMonster [] (monster world))
-  --drawStats (hero world) (viewPort world)
+  drawStats hero viewPort
   drawLog (gamelog world) (0, 23)
   refresh
   where drawMonster x _ acc = drawFunc 'x' x : acc
 	drawHero h acc = drawFunc '@' (position h) : acc
-	drawFunc = drawElem (viewPort world)
+	drawFunc = drawElem viewPort
 
-drawObj :: World -> Coord -> WorldObj ->  [IO ()] -> [IO ()]
-drawObj world c obj acc
+drawObj :: ViewPort -> Coord -> WorldObj ->  [IO ()] -> [IO ()]
+drawObj viewPort c obj acc
   | obj == Wall = drawFunc '#' c : acc
   | obj == Tree = drawFunc '4' c : acc
   | obj == Ground = drawFunc '.' c : acc
   | otherwise = drawFunc ' ' c : acc
-  where drawFunc = drawElem (viewPort world)
+  where drawFunc = drawElem viewPort
 
 drawElem :: ViewPort -> Char -> Coord -> IO ()
 drawElem _ ' ' _ = return ()
@@ -82,6 +83,6 @@ drawLog (x:xs) (a ,b) = do
   drawString x (a, b)
   drawLog xs (0, b + 1)
 
-{--drawStats :: Hero -> ViewPort -> IO ()
-drawStats (Hero (x,y) life maxLife _ _) viewP =
-  drawString ("@ " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show viewP) (0, 22) --}
+drawStats :: Hero -> ViewPort -> IO ()
+drawStats (Hero (x,y) life name maxLife _ _) vp =
+  drawString (name ++ " " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ (show vp)) (0, 22)

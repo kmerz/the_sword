@@ -6,7 +6,6 @@ import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import Data.Maybe (isJust)
 import Sword.Utils
 import Sword.Hero
-import Sword.ViewPorter
 
 data Monster = Monster {
   mlife :: Int,
@@ -21,7 +20,6 @@ type Heros = Map.Map Int Hero
 data World = World {
   heros :: Heros,
   monster :: Map.Map Coord Monster,
-  viewPort :: ViewPort,
   gamelog :: [String]
 } deriving (Show, Read)
 
@@ -30,7 +28,7 @@ emptyHero = Hero{position = (0,0)}
 addHero :: String -> Int -> UTCTime -> World -> World
 addHero name id tnow world@World{heros = h} = world{heros = newHeros}
   where newHeros = Map.insert id Hero{
-    position = (0,id),
+    position = (2,id+2),
     life = 10,
     name = name,
     lastMove = tnow,
@@ -59,15 +57,14 @@ modifyWorld heroId input tnow worldM world = mMove $ (alertMonsters hero) $ hMov
 
 heroAction :: Int -> Maybe Hero -> UTCTime -> Input -> WorldMap -> World -> World
 heroAction _ Nothing _ _ _ w = w
-heroAction id (Just h) tnow input worldM world@World{monster = mon, viewPort = vPort}
+heroAction id (Just h) tnow input worldM world@World{monster = mon}
   | timeToMove && strikeHit = makeHit id h tnow newHeroPos input m world
-  | timeToMove && needMove && legalMove = world{heros = Map.insert id newH herosMap, viewPort = vPort'}
+  | timeToMove && needMove && legalMove = world{heros = Map.insert id newH herosMap}
   | otherwise = world
   where newHeroPos = newHeroCoord h input
 	timeToMove = timeToMoveHero h tnow
 	needMove = needHeroMove h newHeroPos
 	strikeHit = input `elem` fightMoves
-	vPort' = updateViewPort vPort newHeroPos (wMax worldM)
         legalMove = legalPos worldM newHeroPos
 	m = Map.lookup newHeroPos mon
 	newH = moveHero h newHeroPos tnow
@@ -90,8 +87,8 @@ moveMonsters :: UTCTime -> WorldMap -> World -> World
 moveMonsters tnow wM w = Map.foldrWithKey (moveMonster tnow wM) w (monster w)
 
 needMonsterMove :: Coord -> Heros -> Bool
-needMonsterMove c heros = Map.foldrWithKey (needMove c) False heros
-  where needMove c _ hero acc = (c == (position hero)) || acc
+needMonsterMove c heros = Map.foldrWithKey (needMove c) True heros
+  where needMove c _ hero acc = (c /= (position hero)) && acc
 
 moveMonster :: UTCTime -> WorldMap -> Coord -> Monster ->  World -> World
 moveMonster tnow wM c m w@World{heros = h}
@@ -142,7 +139,7 @@ makeMonsterHit w@World{heros = hMap} c m tnow = w'
 legalMonsterMove :: Coord -> Monster -> WorldMap -> World -> Bool
 legalMonsterMove pos m worldM w = notOnObj && notOnHero && notOnMonster && isAwake
   where notOnObj = legalPos worldM pos
-	notOnHero = Map.fold (\h acc -> pos /= (position h) || acc) False hers
+	notOnHero = Map.fold (\h acc -> pos /= (position h) && acc) True hers
 	hers = (heros w)
 	isAwake = awake m
 	notOnMonster = Map.notMember pos (monster w)

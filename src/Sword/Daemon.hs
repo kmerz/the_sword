@@ -41,25 +41,24 @@ monsterAlert chan = do
   monsterAlert chan
 
 daemonGameLoop :: Chan Msg -> World -> WorldMap -> IO ()
-daemonGameLoop chan world worldM = do
+daemonGameLoop chan world worldMap = do
   (nr, input, arg) <- readChan chan
   tnow <- getCurrentTime
   case (nr, input, arg) of
     (0, _, _) ->
-      daemonGameLoop chan (modifyWorld 0 None tnow worldM world) worldM
-    (x, "", _) -> do
-      let newxWorld = modifyWorld 0 None tnow worldM world
+      daemonGameLoop chan (modifyWorld 0 None tnow worldMap world) worldMap
+    (5, "", "") -> do
+      let newxWorld = modifyWorld 0 None tnow worldMap world
       writeChan chan (0, show newxWorld ++ "\n", "")
-      daemonGameLoop chan (newxWorld) worldM
-    (x, input, "") -> do
-      let newWorld = modifyWorld x (convertInput input) tnow worldM world
-      writeChan chan (0, show newWorld ++ "\n", "")
-      daemonGameLoop chan newWorld worldM
+      daemonGameLoop chan (newxWorld) worldMap
     (x, "login", name) ->
-      daemonGameLoop chan (addHero name x tnow world) worldM
+      daemonGameLoop chan (addHero name x tnow world) worldMap
+    (x, input, "") -> do
+      let newWorld = modifyWorld x (convertInput input) tnow worldMap world
+      writeChan chan (0, show newWorld ++ "\n", "")
+      daemonGameLoop chan newWorld worldMap
     otherwise -> do
-      --putStrLn "??: " ++ nr ++ " " ++ input ++ " " ++ arg
-      daemonGameLoop chan world worldM
+      daemonGameLoop chan world worldMap
 
 daemonAcceptLoop :: WorldMap -> Socket -> Chan Msg -> Int -> IO ()
 daemonAcceptLoop wldMap sock chan nr = do
@@ -72,7 +71,8 @@ runConn (sock, _) chan nr worldMap = do
   hdl <- socketToHandle sock ReadWriteMode
   hSetBuffering hdl LineBuffering
   name <- liftM init (hGetLine hdl)
-  hPutStrLn hdl (show worldMap ++ "\n")
+  hPutStrLn hdl (show worldMap)
+  hPutStrLn hdl (show nr)
   chan' <- dupChan chan
   writeChan chan' (nr, "login", name)
   reader <- forkIO $ fix $ \loop -> do
@@ -99,7 +99,6 @@ emptyMonster = Monster {
 emptyWorld = World {
   gamelog = ["You should move.", "Welcome to The Sword"],
   heros = Map.empty,
-  viewPort = ((10,0),(90,20)),
   monster = Map.empty
 }
 
@@ -110,15 +109,16 @@ loadLevel str tnow = foldl consume (emptyWorld, Map.empty) elems
         elems   = concat $ zipWith zip coords lns
         consume (wld, wldMap) (c, elt) =
           case elt of
-	    '@' -> (wld, Map.insert c Ground wldMap)
+            '@' -> (wld, Map.insert c Ground wldMap)
             'x' -> (wld{monster = Map.insert c emptyMonster{mlastMove = tnow} (monster wld)},
-		     Map.insert c Ground wldMap)
+              Map.insert c Ground wldMap)
             '#' -> (wld, Map.insert c Wall wldMap)
             '4' -> (wld, Map.insert c Tree wldMap)
             '.' -> (wld, Map.insert c Ground wldMap)
             otherwise -> error (show elt ++ " not recognized")
 
 convertInput :: String -> Input
+convertInput [] = None
 convertInput (char:xs) =
   case char of
     'k' -> Up

@@ -15,6 +15,7 @@ import Control.Monad.Fix (fix)
 import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
 import qualified Data.Map as Map
 
+import Sword.ViewPorter
 import Sword.Utils
 import Sword.World
 import Sword.Hero
@@ -42,24 +43,36 @@ finish handle = do
 
 clientLoop :: Handle -> IO ()
 clientLoop handle = do
+    timeNow <- getCurrentTime
     hSetNewlineMode handle universalNewlineMode
     hSetBuffering handle LineBuffering
     hPutStrLn handle "kmerz"
     worldMap <- hGetLine handle
+    me <- hGetLine handle
     initGui
-    _ <- race (fromServer (read worldMap :: WorldMap) emptyWorld) toServer
+    _ <- race (fromServer viewPort (read me :: Int) handle (read worldMap :: WorldMap) emptyWorld) (toServer handle timeNow)
     return ()
-  where
-    fromServer worldMap world = do
-      drawWorld worldMap world
-      line <- hGetLine handle
-      let newWorld = case line of
-		   "" -> world
-		   otherwise -> read line :: World
-      fromServer worldMap newWorld
-    toServer = do
-      line <- getInput
-      case line of
-        "quit" -> do hPutStrLn handle "quit"; return "Quit"
-        "" -> toServer
-        _ ->  do hPutStrLn handle (line ++ "\n"); toServer
+    where viewPort = ((0,0), (80,20))
+
+fromServer :: ViewPort -> Int -> Handle -> WorldMap -> World -> IO ()
+fromServer viewPort myself handle worldMap world = do
+  hero <- return (Map.lookup myself (heros world))
+  viewPort' <- return (updateViewPort viewPort hero (wMax worldMap))
+  drawWorld hero viewPort' worldMap world
+  line <- hGetLine handle
+  let newWorld = case line of
+           "" -> world
+           otherwise -> read line :: World
+  fromServer viewPort' myself handle worldMap newWorld
+
+toServer :: Handle -> UTCTime -> IO ()
+toServer handle lastMove = do
+  timeNow <- getCurrentTime
+  line <- getInput
+  case (needToMove timeNow lastMove, line) of
+    (_, "quit") -> do hPutStrLn handle "quit"; return ();
+    (_, "") -> toServer handle lastMove
+    (True, _) ->  do hPutStrLn handle (line ++ "\n"); toServer handle timeNow
+    otherwise -> toServer handle lastMove
+  where needToMove tNow last = (diffUTCTime tNow last) >= timeToNextMove
+        timeToNextMove = 0.1

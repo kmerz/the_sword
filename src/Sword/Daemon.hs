@@ -53,6 +53,8 @@ daemonGameLoop chan world worldMap = do
       daemonGameLoop chan newxWorld worldMap
     (x, "login", name) ->
       daemonGameLoop chan (addHero name x tnow world) worldMap
+    (x, "quit", _) ->
+      daemonGameLoop chan (removeHero x world) worldMap
     (x, input, "") -> do
       let newWorld = modifyWorld x (convertInput input) tnow worldMap world
       writeChan chan (0, show newWorld ++ "\n", "")
@@ -82,7 +84,9 @@ runConn (sock, _) chan nr worldMap = do
   handle (\(SomeException _) -> return ()) $ fix $ \loop -> do
     line <- hGetLine hdl
     case line of
-      "quit" -> hPutStrLn hdl "Bye!"
+      "quit" -> do
+        writeChan chan (nr, "quit", "")
+        hPutStrLn hdl "Bye!"
       _ -> do
         writeChan chan (nr, line, "")
 	loop

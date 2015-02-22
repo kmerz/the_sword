@@ -10,5 +10,5 @@ main = do
   args <- getArgs
   case head args of
     "daemon" -> daemonStart
-    "client" -> clientStart
+    "client" -> clientStart (tail args)
     otherwise -> return ()

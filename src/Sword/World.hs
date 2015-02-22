@@ -3,7 +3,6 @@ module Sword.World where
 import qualified Data.Map as Map
 
 import Data.Time (UTCTime, getCurrentTime, diffUTCTime)
-import Data.Maybe (isJust)
 import Sword.Utils
 import Sword.Hero
 
@@ -37,14 +36,20 @@ emptyWorld = World {
 }
 
 addHero :: String -> Int -> UTCTime -> World -> World
-addHero name id tnow world@World{heros = h} = world{heros = newHeros}
-  where newHeros = Map.insert id Hero{
-    position = (2,id+2),
-    life = 10,
-    name = name,
-    lastMove = tnow,
-    maxLife = 100,
-    hit = (None, (0,0))} h
+addHero name id tnow world@World{heros = h, gamelog = log} = world{heros = newHeros, gamelog = nlog}
+  where nlog = (name ++ " has enterd the realm") : log
+        newHeros = Map.insert id Hero{
+          position = (2,id+2),
+          life = 10,
+          name = name,
+          lastMove = tnow,
+          maxLife = 100,
+          hit = (None, (0,0))} h
+
+removeHero :: Int -> World -> World
+removeHero id world@World{heros = h, gamelog = log} = world{heros = nheros, gamelog = nlog}
+  where nlog = ((show id) ++ " has left the realm") : log
+        nheros = Map.delete id h
 
 nearestHero :: Coord -> Heros -> (Int, Hero)
 nearestHero c = Map.foldWithKey (findNext c) (0, emptyHero)

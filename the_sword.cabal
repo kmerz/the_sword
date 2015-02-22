@@ -17,6 +17,7 @@ cabal-version:       >=1.8
 
 executable the_sword
   main-is:             main.hs
-  other-modules:       Sword.Utils, Sword.Hero, Sword.World, Sword.Gui, Sword.Daemon, Sword.ViewPorter
+  other-modules:       Sword.Utils, Sword.Hero, Sword.World, Sword.Gui, Sword.Daemon, Sword.ViewPorter, 
+                       Sword.Client
   hs-source-dirs:      src/
   build-depends:       containers, time, hscurses, base, network, async

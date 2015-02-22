@@ -90,17 +90,6 @@ runConn (sock, _) chan nr worldMap = do
     hClose hdl
     loop
 
-emptyMonster = Monster {
-  mlife = 5,
-  awake = False
-}
-
-emptyWorld = World {
-  gamelog = ["You should move.", "Welcome to The Sword"],
-  heros = Map.empty,
-  monster = Map.empty
-}
-
 loadLevel :: String -> UTCTime -> (World, WorldMap)
 loadLevel str tnow = foldl consume (emptyWorld, Map.empty) elems
   where lns     = lines str

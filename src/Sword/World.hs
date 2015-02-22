@@ -25,6 +25,17 @@ data World = World {
 
 emptyHero = Hero{position = (0,0)}
 
+emptyMonster = Monster {
+  mlife = 5,
+  awake = False
+}
+
+emptyWorld = World {
+  gamelog = ["You should move.", "Welcome to The Sword"],
+  heros = Map.empty,
+  monster = Map.empty
+}
+
 addHero :: String -> Int -> UTCTime -> World -> World
 addHero name id tnow world@World{heros = h} = world{heros = newHeros}
   where newHeros = Map.insert id Hero{

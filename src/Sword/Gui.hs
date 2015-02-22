@@ -85,4 +85,4 @@ drawLog (x:xs) (a ,b) = do
 
 drawStats :: Hero -> ViewPort -> IO ()
 drawStats (Hero (x,y) life name maxLife _ _) vp =
-  drawString (name ++ " " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ (show vp)) (0, 22)
+  drawString (name ++ " " ++ show (x, y) ++ " Life: " ++ show life ++ "% ViewPort: " ++ show vp) (0, 22)

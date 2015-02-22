@@ -50,15 +50,14 @@ daemonGameLoop chan world worldMap = do
     (5, "", "") -> do
       let newxWorld = modifyWorld 0 None tnow worldMap world
       writeChan chan (0, show newxWorld ++ "\n", "")
-      daemonGameLoop chan (newxWorld) worldMap
+      daemonGameLoop chan newxWorld worldMap
     (x, "login", name) ->
       daemonGameLoop chan (addHero name x tnow world) worldMap
     (x, input, "") -> do
       let newWorld = modifyWorld x (convertInput input) tnow worldMap world
       writeChan chan (0, show newWorld ++ "\n", "")
       daemonGameLoop chan newWorld worldMap
-    otherwise -> do
-      daemonGameLoop chan world worldMap
+    otherwise -> daemonGameLoop chan world worldMap
 
 daemonAcceptLoop :: WorldMap -> Socket -> Chan Msg -> Int -> IO ()
 daemonAcceptLoop wldMap sock chan nr = do
@@ -71,8 +70,8 @@ runConn (sock, _) chan nr worldMap = do
   hdl <- socketToHandle sock ReadWriteMode
   hSetBuffering hdl LineBuffering
   name <- liftM init (hGetLine hdl)
-  hPutStrLn hdl (show worldMap)
-  hPutStrLn hdl (show nr)
+  hPrint hdl worldMap
+  hPrint hdl nr
   chan' <- dupChan chan
   writeChan chan' (nr, "login", name)
   reader <- forkIO $ fix $ \loop -> do

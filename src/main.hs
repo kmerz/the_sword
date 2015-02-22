@@ -56,8 +56,8 @@ clientLoop handle = do
 
 fromServer :: ViewPort -> Int -> Handle -> WorldMap -> World -> IO ()
 fromServer viewPort myself handle worldMap world = do
-  hero <- return (Map.lookup myself (heros world))
-  viewPort' <- return (updateViewPort viewPort hero (wMax worldMap))
+  let hero = Map.lookup myself (heros world)
+  let viewPort' = updateViewPort viewPort hero (wMax worldMap)
   drawWorld hero viewPort' worldMap world
   line <- hGetLine handle
   let newWorld = case line of
@@ -74,5 +74,5 @@ toServer handle lastMove = do
     (_, "") -> toServer handle lastMove
     (True, _) ->  do hPutStrLn handle (line ++ "\n"); toServer handle timeNow
     otherwise -> toServer handle lastMove
-  where needToMove tNow last = (diffUTCTime tNow last) >= timeToNextMove
+  where needToMove tNow last = diffUTCTime tNow last >= timeToNextMove
         timeToNextMove = 0.1

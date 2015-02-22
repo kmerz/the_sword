@@ -36,21 +36,21 @@ addHero name id tnow world@World{heros = h} = world{heros = newHeros}
     hit = (None, (0,0))} h
 
 nearestHero :: Coord -> Heros -> (Int, Hero)
-nearestHero c heros = Map.foldWithKey (findNext c) (0, emptyHero) heros
+nearestHero c = Map.foldWithKey (findNext c) (0, emptyHero)
   where findNext _ id h (0, _) = (id, h)
         findNext c id h acc =
-          if (position h) < position (snd acc) && (position h) < c
+          if position h < position (snd acc) && position h < c
           then (id, h) else acc
 
 wMax :: WorldMap -> Coord
-wMax w = Map.foldWithKey findMax (0,0) w
+wMax = Map.foldWithKey findMax (0,0)
   where findMax a _ acc = if a > acc then a else acc
 
 legalPos :: WorldMap -> Coord -> Bool
 legalPos m c = Map.lookup c m == Just Ground
 
 modifyWorld :: Int -> Input -> UTCTime -> WorldMap -> World -> World
-modifyWorld heroId input tnow worldM world = mMove $ (alertMonsters hero) $ hMove world
+modifyWorld heroId input tnow worldM world = mMove $ alertMonsters hero $ hMove world
   where mMove = moveMonsters tnow worldM
         hMove = heroAction heroId hero tnow input worldM
 	hero = Map.lookup heroId (heros world)
@@ -68,7 +68,7 @@ heroAction id (Just h) tnow input worldM world@World{monster = mon}
         legalMove = legalPos worldM newHeroPos
 	m = Map.lookup newHeroPos mon
 	newH = moveHero h newHeroPos tnow
-	herosMap = (heros world)
+	herosMap = heros world
 
 makeHit :: Int -> Hero -> UTCTime -> Coord -> Input -> Maybe Monster -> World -> World
 makeHit _ _ _ _ _ Nothing w = w { gamelog = "You hit thin air." : gamelog w }
@@ -87,8 +87,8 @@ moveMonsters :: UTCTime -> WorldMap -> World -> World
 moveMonsters tnow wM w = Map.foldrWithKey (moveMonster tnow wM) w (monster w)
 
 needMonsterMove :: Coord -> Heros -> Bool
-needMonsterMove c heros = Map.foldrWithKey (needMove c) True heros
-  where needMove c _ hero acc = (c /= (position hero)) && acc
+needMonsterMove c = Map.foldrWithKey (needMove c) True
+  where needMove c _ hero acc = (c /= position hero) && acc
 
 moveMonster :: UTCTime -> WorldMap -> Coord -> Monster ->  World -> World
 moveMonster tnow wM c m w@World{heros = h}
@@ -139,8 +139,8 @@ makeMonsterHit w@World{heros = hMap} c m tnow = w'
 legalMonsterMove :: Coord -> Monster -> WorldMap -> World -> Bool
 legalMonsterMove pos m worldM w = notOnObj && notOnHero && notOnMonster && isAwake
   where notOnObj = legalPos worldM pos
-	notOnHero = Map.fold (\h acc -> pos /= (position h) && acc) True hers
-	hers = (heros w)
+	notOnHero = Map.fold (\h acc -> pos /= position h && acc) True hers
+	hers = heros w
 	isAwake = awake m
 	notOnMonster = Map.notMember pos (monster w)
 
